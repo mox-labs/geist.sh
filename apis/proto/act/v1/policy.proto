@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package act.v1;
+
+// How to match a string value.
+// All fields are optional; exactly one should be set.
+message StringMatch {
+  oneof match_type {
+    // Exact string equality.
+    string exact = 1;
+
+    // String starts with this prefix.
+    string prefix = 2;
+
+    // String ends with this suffix.
+    string suffix = 3;
+
+    // String contains this substring.
+    string contains = 4;
+
+    // String matches this regex pattern.
+    string regex = 5;
+  }
+}
+
+// Match a specific metadata key-value pair.
+message MetadataMatch {
+  // The metadata key to extract.
+  string key = 1;
+
+  // How to match the metadata value.
+  StringMatch value = 2;
+}
+
+// Declarative match specification for agent operations.
+// All present fields are ANDed — every condition must match.
+// Omitted fields match anything.
+message AgentOpMatch {
+  // Match on agent identity.
+  StringMatch agent_id = 1;
+
+  // Match on tool/command name.
+  StringMatch tool_name = 2;
+
+  // Match on target resource path.
+  StringMatch resource = 3;
+
+  // Match on operation verb.
+  StringMatch operation = 4;
+
+  // Match on session ID.
+  StringMatch session_id = 5;
+
+  // Match on metadata key-value pairs (all ANDed).
+  repeated MetadataMatch metadata = 6;
+}
+
+// A deny rule with a human-readable reason.
+// Multiple matches within a rule are ORed — any match triggers denial.
+message DenyRule {
+  // Why this operation is denied.
+  string reason = 1;
+
+  // Match conditions (ORed — any match triggers denial).
+  repeated AgentOpMatch matches = 2;
+}
+
+// An allow rule.
+// Multiple matches within a rule are ORed — any match grants access.
+message AllowRule {
+  // Match conditions (ORed — any match grants access).
+  repeated AgentOpMatch matches = 1;
+}
+
+// Deny/allow policy configuration.
+//
+// Evaluation order (non-negotiable):
+//   1. Deny rules — if any match, operation is denied (absolute)
+//   2. Allow rules — if any match, operation is allowed
+//   3. Default — deny (no matching rule)
+message DenyAllowPolicy {
+  // Deny rules — evaluated first, absolute.
+  repeated DenyRule deny = 1;
+
+  // Allow rules — evaluated second.
+  repeated AllowRule allow = 2;
+}
+
+// Result of evaluating an agent operation against policy.
+message PolicyDecision {
+  // The decision outcome.
+  PolicyDecisionType decision = 1;
+
+  // Human-readable reason (populated for DENY).
+  string reason = 2;
+}
+
+// Policy decision outcomes.
+enum PolicyDecisionType {
+  // Unspecified — should never occur in practice.
+  POLICY_DECISION_TYPE_UNSPECIFIED = 0;
+
+  // The operation is permitted.
+  POLICY_DECISION_TYPE_ALLOW = 1;
+
+  // The operation is denied.
+  POLICY_DECISION_TYPE_DENY = 2;
+}

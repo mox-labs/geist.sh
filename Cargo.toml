@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["act/pdp", "geist/edge", "geist/bin"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mox-labs/geist.sh"
+authors = ["Yashodeep Vyas"]
+
+[workspace.dependencies]
+# Internal
+act-pdp = { path = "act/pdp" }
+
+# Core (path dep on x.uma/rumi)
+rumi = { path = "../x.uma/rumi/core", features = ["serde"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async
+tokio = { version = "1", features = ["full"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

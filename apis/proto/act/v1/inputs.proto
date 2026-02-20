@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package act.v1;
+
+// DataInput extractors for AgentOp fields.
+// Each message is a configuration type for the rumi registry,
+// telling the matcher engine which field to extract.
+
+// Extracts the agent ID from the operation context.
+message AgentIdInput {}
+
+// Extracts the tool/command name.
+message ToolNameInput {}
+
+// Extracts the target resource path.
+message ResourceInput {}
+
+// Extracts the operation verb.
+message OperationInput {}
+
+// Extracts the session ID.
+message SessionIdInput {}
+
+// Extracts a metadata value by key.
+// Returns no match if the key is absent.
+message MetadataInput {
+  // Metadata key to extract.
+  string key = 1;
+}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package act.v1;
+
+// An operation requested by an autonomous agent.
+//
+// Carries all data available at the policy enforcement point:
+// agent identity, tool/command being invoked, target resource,
+// and session metadata.
+message AgentOp {
+  // Identity of the agent requesting the operation.
+  string agent_id = 1;
+
+  // Tool or command being invoked (e.g. "Bash", "file.read", "llm.complete").
+  string tool_name = 2;
+
+  // Target resource path (e.g. "/home/user/project/src/lib.rs").
+  string resource = 3;
+
+  // Operation verb (e.g. "read", "write", "delete", "execute").
+  string operation = 4;
+
+  // Session identifier for grouping related operations.
+  string session_id = 5;
+
+  // Arbitrary metadata key-value pairs (e.g. command args, encoding).
+  map<string, string> metadata = 6;
+}

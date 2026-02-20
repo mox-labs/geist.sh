@@ -1,0 +1,17 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  # Rust (prost)
+  - remote: buf.build/community/neoeinstein-prost
+    out: gen/rust
+    opt:
+      - file_descriptor_set
+
+  # Rust (prost-serde for JSON)
+  - remote: buf.build/community/neoeinstein-prost-serde
+    out: gen/rust
+
+  # Python (betterproto)
+  - remote: buf.build/community/danielgtaylor-betterproto
+    out: gen/python
