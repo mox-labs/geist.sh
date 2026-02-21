@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["act/pdp", "geist/edge", "geist/bin"]
+members = ["geist/policy", "geist/edge", "geist/bin"]
 
 [workspace.package]
 version = "0.0.1"
@@ -11,7 +11,7 @@ authors = ["Yashodeep Vyas"]
 
 [workspace.dependencies]
 # Internal
-act-pdp = { path = "act/pdp" }
+geist-policy = { path = "geist/policy" }
 
 # Core (path dep on x.uma/rumi)
 rumi = { path = "../x.uma/rumi/core", features = ["serde"] }

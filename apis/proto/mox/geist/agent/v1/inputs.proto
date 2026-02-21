@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package act.v1;
+package mox.geist.agent.v1;
 
 // DataInput extractors for AgentOp fields.
 // Each message is a configuration type for the rumi registry,

@@ -32,32 +32,65 @@ L1: Kernel     (shell)  — eBPF, sandbox enforcement (Rust, future)
 
 ## Current State
 
-Rust workspace at repo root. Three crates: `act/pdp` (PDP domain core), `geist/edge` (edge adapter stub), `geist/bin` (binary stub). SvelteKit experience at `docs/experience/`, deployed to `gestalt.mox.nexus`. Guild deliberation (10 members) completed 2026-02-19.
+Rust workspace at repo root. Three crates: `geist/policy` (PDP), `geist/edge` (edge adapter stub), `geist/bin` (binary stub). SvelteKit experience at `docs/experience/`, deployed to `gestalt.mox.nexus`. Guild deliberation (10 members) completed 2026-02-19.
 
 ## Key Documents (Read in This Order)
 
-1. `scratch/guild-deliberation-2026-02-19.md` — **START HERE** for architecture decisions, phased plan, guild outputs, validation criteria. Self-contained — resume work from this document alone.
-2. `scratch/architecture-reframe-2026-02-19.md` — The "shell IS the runtime" reframe.
-3. `scratch/project-status-2026-02-19.md` — Code inventory and test coverage.
+1. `scratch/handoff-2026-02-21.md` — **START HERE**. Self-contained session handoff: current state, P2 spec, what exists vs needs building, all settled decisions.
+2. `scratch/architecture-session-2026-02-20.md` — Full architecture (Gateway API extension, deployment modes, capability abstraction, ECDS).
+3. `scratch/guild-deliberation-2026-02-19.md` — Full guild record (10 members, 22 validation criteria, phased plan).
 4. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
 
 ## Implementation Plan (Guild-Approved)
 
 | Phase | What | Status |
 |-------|------|--------|
-| **P1** | Rename → act/pdp, geist/edge, geist/bin. #[non_exhaustive], PolicyError | In progress |
-| **P2** | act-cli for Claude Code PreToolUse hook | Pending |
-| **P3** | Escalate variant (Deny > Escalate > Allow lattice) | Pending |
+| **P1** | Rename + restructure (geist/policy, geist/edge, geist/bin). #[non_exhaustive], PolicyError, Send+Sync | Done |
+| **P2** | act-cli for Claude Code PreToolUse hook + catch_unwind + path canonicalization | Pending |
+| **P3** | Escalate variant (Deny > Escalate > Allow lattice) + AgentPolicy CRD types | Pending |
 | **P4** | geist-telemetry + shared kernel extraction decision | Pending |
-| **P5+** | Gateway HTTP, eBPF, MCP adapter | Future |
+| **P5+** | geist-edge HTTP (APIServer/APIClient + capability registry), eBPF, MCP adapter | Future |
 
 ## Crate Layout
 
 | Crate | Path | Role |
 |-------|------|------|
-| `act-pdp` | `act/pdp` | PDP domain core |
+| `geist-policy` | `geist/policy` | PDP domain core |
 | `geist-edge` | `geist/edge` | Edge adapter (stub) |
 | `geist` | `geist/bin` | Binary + orchestrator |
+
+## Proto API Naming Convention
+
+Follows xDS type URL format: `{org}.{product}.{domain}.{version}.{Type}`
+
+```
+apis/proto/
+└── mox/geist/
+    ├── agent/v1/       ← package mox.geist.agent.v1 (agent tool governance)
+    │   ├── agent_op.proto
+    │   ├── policy.proto
+    │   └── inputs.proto
+    └── edge/v1/        ← package mox.geist.edge.v1 (edge config)
+        └── edge.proto
+```
+
+| Domain | Package | Types |
+|--------|---------|-------|
+| Agent governance | `mox.geist.agent.v1` | AgentOp, AgentOpMatch, DenyAllowPolicy, PolicyDecision |
+| Edge config | `mox.geist.edge.v1` | EdgeConfig, Capability |
+| Traffic governance | `mox.geist.traffic.v1` | (future — HTTP/gRPC via rumi-http) |
+
+Registry type URLs match: `mox.geist.agent.v1.AgentIdInput`, `mox.geist.agent.v1.ToolNameInput`, etc.
+
+### Control Plane Architecture
+
+```
+Gateway API CRDs ──→ Control Plane ──→ xDS (ECDS) ──→ geist-edge ──→ rumi.evaluate()
+AgentPolicy      ──→ translates to ──→ TypedExtensionConfig ──→ agent policy enforcement
+HTTPRoute        ──→ translates to ──→ RDS/LDS              ──→ traffic routing
+```
+
+Agent policies are delivered as **typed extension configs via ECDS** — they're not listeners, routes, or clusters. This allows dynamic policy updates without edge restart, and coexistence with standard Envoy xDS resources.
 
 ## Settled Decisions (Not Open for Debate)
 
@@ -68,6 +101,9 @@ Rust workspace at repo root. Three crates: `act/pdp` (PDP domain core), `geist/e
 - **Tower in HTTP adapter only** — never in domain core
 - **rumi-act and rumi-claude are SEPARATE crates** — domain PDP vs Claude-specific adapter
 - **Keep 3-crate structure** — don't premature-split until coupling evidence manifests
+- **AgentPolicy as Gateway API extension** — same policy attachment pattern (GEP-713) as SecurityPolicy/AuthorizationPolicy. rumi compiles both `HttpRouteMatch` (HTTP) and `AgentOpMatch` (agent) through the same engine
+- **xDS namespace: `mox.geist.{domain}.v1`** — follows Envoy convention (`{org}.{product}.{domain}.{version}.{Type}`)
+- **"Agentic Control Theory" is research framing only** — lives in papers/docs, not in crate names or wire format
 
 ## Research Corpus
 
@@ -145,9 +181,14 @@ filename: ".playwright-mcp/description.png"
 
 Never save screenshots to the project root.
 
+## Skills
+
+- `.claude/skills/geist-rust-mastery/` — Rust architectural judgment (13 codebases)
+- `.claude/skills/geist-gateway-patterns/` — Gateway API, xDS, proxyless gRPC, control plane patterns. 174k of reference material mapping service mesh → agent governance
+
 ## Quick Verification
 
 ```bash
 cargo test --workspace
-# Expected: 5 doc-tests passing
+# Expected: 48 tests passing, 0 failures
 ```

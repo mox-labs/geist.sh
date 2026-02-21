@@ -1,4 +1,4 @@
-//! act-pdp: Policy Decision Point for autonomous agent operations.
+//! Policy Decision Point for autonomous agent operations.
 //!
 //! Provides context types, `DataInput` extractors, a domain compiler,
 //! and a deny-first policy evaluator for autonomous agent operations.
@@ -6,7 +6,7 @@
 //! # Quick Start
 //!
 //! ```
-//! use act_pdp::prelude::*;
+//! use geist_policy::prelude::*;
 //!
 //! // Load policy from JSON
 //! let json = r#"{
@@ -34,7 +34,7 @@
 //! For programmatic rule construction:
 //!
 //! ```
-//! use act_pdp::prelude::*;
+//! use geist_policy::prelude::*;
 //!
 //! let rule = AgentOpMatch {
 //!     agent_id: Some(StringMatch::Exact("claude-main".into())),
@@ -68,36 +68,38 @@ pub use inputs::*;
 #[cfg(feature = "registry")]
 pub use inputs::MetadataInputConfig;
 
-/// Register all act-pdp types for [`AgentOp`] with the given builder.
+/// Register all agent policy types for [`AgentOp`] with the given builder.
 ///
-/// Registers core matchers and ACT domain inputs:
-/// - `act.v1.AgentIdInput` -> [`AgentIdInput`]
-/// - `act.v1.ToolNameInput` -> [`ToolNameInput`]
-/// - `act.v1.ResourceInput` -> [`ResourceInput`]
-/// - `act.v1.OperationInput` -> [`OperationInput`]
-/// - `act.v1.SessionIdInput` -> [`SessionIdInput`]
-/// - `act.v1.MetadataInput` -> [`MetadataInput`]
+/// Registers core matchers and agent domain inputs following the
+/// xDS type URL convention (`{org}.{product}.{domain}.{version}.{Type}`):
+///
+/// - `mox.geist.agent.v1.AgentIdInput` -> [`AgentIdInput`]
+/// - `mox.geist.agent.v1.ToolNameInput` -> [`ToolNameInput`]
+/// - `mox.geist.agent.v1.ResourceInput` -> [`ResourceInput`]
+/// - `mox.geist.agent.v1.OperationInput` -> [`OperationInput`]
+/// - `mox.geist.agent.v1.SessionIdInput` -> [`SessionIdInput`]
+/// - `mox.geist.agent.v1.MetadataInput` -> [`MetadataInput`]
 #[cfg(feature = "registry")]
 #[must_use]
 pub fn register(
     builder: rumi::RegistryBuilder<AgentOp>,
 ) -> rumi::RegistryBuilder<AgentOp> {
     rumi::register_core_matchers(builder)
-        .input::<AgentIdInput>("act.v1.AgentIdInput")
-        .input::<ToolNameInput>("act.v1.ToolNameInput")
-        .input::<ResourceInput>("act.v1.ResourceInput")
-        .input::<OperationInput>("act.v1.OperationInput")
-        .input::<SessionIdInput>("act.v1.SessionIdInput")
-        .input::<MetadataInput>("act.v1.MetadataInput")
+        .input::<AgentIdInput>("mox.geist.agent.v1.AgentIdInput")
+        .input::<ToolNameInput>("mox.geist.agent.v1.ToolNameInput")
+        .input::<ResourceInput>("mox.geist.agent.v1.ResourceInput")
+        .input::<OperationInput>("mox.geist.agent.v1.OperationInput")
+        .input::<SessionIdInput>("mox.geist.agent.v1.SessionIdInput")
+        .input::<MetadataInput>("mox.geist.agent.v1.MetadataInput")
 }
 
 /// Prelude for convenient imports.
 pub mod prelude {
     pub use super::{
         compile_agent_op_matches, AgentIdInput, AgentOp, AgentOpMatch, AgentOpMatchExt,
-        AllowRule, DenyAllowPolicy, DenyRule, GatewayError, MetadataInput, MetadataMatch,
-        OperationInput, PolicyDecision, PolicyError, PolicyEvaluator, ResourceInput, SessionIdInput,
-        StringMatch, ToolNameInput,
+        AllowRule, DenyAllowPolicy, DenyRule, MetadataInput, MetadataMatch, OperationInput,
+        PolicyDecision, PolicyError, PolicyEvaluator, ResourceInput, SessionIdInput, StringMatch,
+        ToolNameInput,
     };
     pub use rumi::prelude::*;
 }

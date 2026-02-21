@@ -45,7 +45,7 @@ impl PolicyDecision {
 /// # Example
 ///
 /// ```
-/// use act_pdp::prelude::*;
+/// use geist_policy::prelude::*;
 ///
 /// let policy = DenyAllowPolicy {
 ///     deny: vec![DenyRule {

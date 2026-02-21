@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package act.v1;
+package mox.geist.agent.v1;
 
 // How to match a string value.
 // All fields are optional; exactly one should be set.
