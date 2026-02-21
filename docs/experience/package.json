@@ -1,0 +1,30 @@
+{
+	"name": "gestalt",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"deploy": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --project-name gestalt"
+	},
+	"dependencies": {
+		"@content-collections/core": "^0.13.1",
+		"@content-collections/vite": "^0.2.8",
+		"svelte-exmarkdown": "^5.0.2",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-cloudflare": "^7.2.6",
+		"@sveltejs/kit": "^2.50.1",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"svelte": "^5.48.2",
+		"svelte-check": "^4.3.5",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+		"wrangler": "^4.61.0"
+	}
+}

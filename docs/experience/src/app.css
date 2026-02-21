@@ -1,0 +1,95 @@
+/* ==========================================================================
+   GESTALT — GLOBAL STYLES
+   Policy enforcement for autonomous agents. The whole site is the terminal.
+   ========================================================================== */
+
+@layer reset, tokens, base, utilities;
+
+@import './lib/tokens/hud.css';
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--hud-font);
+    font-size: var(--hud-text-base);
+    line-height: var(--hud-leading-normal);
+    color: var(--hud-text);
+    background: var(--hud-bg-void);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scanline overlay — subtle CRT effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 255, 65, 0.03) 2px,
+      rgba(0, 255, 65, 0.03) 3px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: var(--hud-weight-medium);
+    line-height: var(--hud-leading-tight);
+  }
+
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; }
+
+  a {
+    color: var(--hud-accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  :focus-visible {
+    outline: var(--hud-focus-ring-width) solid var(--hud-focus-ring);
+    outline-offset: var(--hud-focus-ring-offset);
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    body::after { display: none; }
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
