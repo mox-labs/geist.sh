@@ -1,0 +1,11 @@
+version: v2
+plugins:
+  # Rust (prost)
+  - remote: buf.build/community/neoeinstein-prost
+    out: gen/rust
+    opt:
+      - file_descriptor_set
+
+  # Rust (prost-serde for JSON)
+  - remote: buf.build/community/neoeinstein-prost-serde
+    out: gen/rust

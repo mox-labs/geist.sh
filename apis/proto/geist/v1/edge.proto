@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package geist.v1;
+
+import "act/v1/policy.proto";
+
+// Capability descriptor in the edge registry.
+// Clients invoke capabilities by name; the edge resolves, governs, routes.
+message Capability {
+  // Capability name (e.g. "llm.complete", "db.query", "orders.list").
+  string name = 1;
+
+  // Human-readable description.
+  string description = 2;
+
+  // Upstream endpoint this capability resolves to.
+  string upstream = 3;
+
+  // Protocol for upstream communication.
+  CapabilityProtocol protocol = 4;
+}
+
+// Supported upstream protocols.
+enum CapabilityProtocol {
+  CAPABILITY_PROTOCOL_UNSPECIFIED = 0;
+  CAPABILITY_PROTOCOL_HTTP = 1;
+  CAPABILITY_PROTOCOL_GRPC = 2;
+  CAPABILITY_PROTOCOL_MCP = 3;
+}
+
+// Edge configuration — loaded at startup, updateable via xDS.
+message EdgeConfig {
+  // Policy applied to all operations through the edge.
+  act.v1.DenyAllowPolicy policy = 1;
+
+  // Registered capabilities.
+  repeated Capability capabilities = 2;
+
+  // Listener address (e.g. "0.0.0.0:8080").
+  string listen_address = 3;
+}
