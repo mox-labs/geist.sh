@@ -1,0 +1,36 @@
+# Working documents
+scratch/
+**/scratch/
+
+# OS
+.DS_Store
+
+# Rust
+target/
+
+# Dependencies
+node_modules/
+
+# SvelteKit
+.svelte-kit/
+
+# Cloudflare
+.wrangler/
+
+# Content Collections
+.content-collections/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Claude
+.claude/settings.local.json
+
+# Playwright
+.playwright-mcp/
