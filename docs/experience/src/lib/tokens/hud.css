@@ -1,0 +1,177 @@
+/* ==========================================================================
+   GESTALT HUD TOKENS
+   Policy enforcement for autonomous agents.
+
+   Phosphor green on void black. Information as signal.
+   Adapted from blueprints HUD — scoped to :root (the whole site is the terminal).
+   ========================================================================== */
+
+:root {
+
+  /* -------------------------------------------------------------------
+     BACKGROUNDS
+     Four-layer depth stack. Each layer is a subtle step lighter.
+     The eye reads depth from luminance difference, not from shadows.
+     ------------------------------------------------------------------- */
+
+  --hud-bg-void:     #000000;
+  --hud-bg-surface:  #040a04;
+  --hud-bg-raised:   #081008;
+  --hud-bg-overlay:  #0c140c;
+
+  --hud-bg-hover:    #0a1a0a;
+  --hud-bg-active:   #0e200e;
+  --hud-bg-input:    #020602;
+
+  /* -------------------------------------------------------------------
+     BORDERS
+     Structural, not decorative. Every line earns its place.
+     ------------------------------------------------------------------- */
+
+  --hud-border-subtle:  #0a1a0a;
+  --hud-border:         #0f2a0f;
+  --hud-border-strong:  #1a3a1a;
+
+  /* -------------------------------------------------------------------
+     TEXT
+     JetBrains Mono throughout. Hierarchy through luminance.
+     ------------------------------------------------------------------- */
+
+  --hud-text:           #b0ffb0;
+  --hud-text-secondary: #70b870;
+  --hud-text-muted:     #4a8a4a;
+  --hud-text-faint:     #2a5a2a;
+
+  /* -------------------------------------------------------------------
+     SEMANTIC COLORS
+     Color is signal, not decoration. Grayscale by default.
+     Color appears only to communicate state.
+     ------------------------------------------------------------------- */
+
+  --hud-green:        #00FF41;
+  --hud-green-soft:   rgba(0, 255, 65, 0.08);
+  --hud-green-border: rgba(0, 255, 65, 0.30);
+
+  --hud-amber:        #c89660;
+  --hud-amber-soft:   rgba(200, 150, 96, 0.10);
+  --hud-amber-border: rgba(200, 150, 96, 0.40);
+
+  --hud-red:          #d45555;
+  --hud-red-soft:     rgba(212, 85, 85, 0.10);
+  --hud-red-border:   rgba(212, 85, 85, 0.40);
+
+  --hud-blue:         #5b8af0;
+  --hud-blue-soft:    rgba(91, 138, 240, 0.10);
+  --hud-blue-border:  rgba(91, 138, 240, 0.40);
+
+  /* -------------------------------------------------------------------
+     ROLE ALIASES
+     ------------------------------------------------------------------- */
+
+  --hud-accent:         var(--hud-green);
+  --hud-accent-soft:    var(--hud-green-soft);
+  --hud-accent-border:  var(--hud-green-border);
+
+  --hud-status-active:  var(--hud-green);
+  --hud-status-draft:   var(--hud-amber);
+  --hud-status-error:   var(--hud-red);
+  --hud-status-info:    var(--hud-blue);
+
+  /* -------------------------------------------------------------------
+     TYPOGRAPHY
+     One typeface: JetBrains Mono. This is an instrument panel.
+     ------------------------------------------------------------------- */
+
+  --hud-font: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+
+  --hud-text-3xs:   0.625rem;   /* 10px */
+  --hud-text-2xs:   0.6875rem;  /* 11px */
+  --hud-text-xs:    0.75rem;    /* 12px */
+  --hud-text-sm:    0.8125rem;  /* 13px */
+  --hud-text-base:  0.875rem;   /* 14px */
+  --hud-text-lg:    1rem;       /* 16px */
+  --hud-text-xl:    1.25rem;    /* 20px */
+  --hud-text-2xl:   1.75rem;    /* 28px */
+
+  --hud-leading-tight:   1.2;
+  --hud-leading-normal:  1.5;
+  --hud-leading-relaxed: 1.7;
+
+  --hud-weight-normal:   400;
+  --hud-weight-medium:   500;
+  --hud-weight-semibold: 600;
+
+  --hud-tracking-normal: 0;
+  --hud-tracking-wide:   0.04em;
+  --hud-tracking-wider:  0.08em;
+
+  /* -------------------------------------------------------------------
+     SPACING
+     4px base unit. Information density is a feature.
+     ------------------------------------------------------------------- */
+
+  --hud-space-1:  4px;
+  --hud-space-2:  8px;
+  --hud-space-3:  12px;
+  --hud-space-4:  16px;
+  --hud-space-5:  20px;
+  --hud-space-6:  24px;
+  --hud-space-8:  32px;
+  --hud-space-10: 40px;
+
+  --hud-panel-padding:  var(--hud-space-5);
+  --hud-panel-gap:      var(--hud-space-3);
+  --hud-section-gap:    var(--hud-space-5);
+
+  --hud-grid-gap:  var(--hud-space-4);
+  --hud-grid-min:  260px;
+  --hud-grid-max:  1fr;
+
+  --hud-sidebar-width:      200px;
+  --hud-sidebar-padding-x:  var(--hud-space-2);
+  --hud-sidebar-padding-y:  var(--hud-space-5);
+
+  /* -------------------------------------------------------------------
+     BORDERS & RADII
+     Minimal. Precise, not friendly.
+     ------------------------------------------------------------------- */
+
+  --hud-radius:     2px;
+  --hud-radius-md:  4px;
+  --hud-radius-lg:  6px;
+
+  /* -------------------------------------------------------------------
+     TRANSITIONS
+     Fast. Always-on, never "arriving."
+     ------------------------------------------------------------------- */
+
+  --hud-transition: 100ms ease-out;
+
+  /* -------------------------------------------------------------------
+     FOCUS
+     ------------------------------------------------------------------- */
+
+  --hud-focus-ring:         var(--hud-blue);
+  --hud-focus-ring-offset:  1px;
+  --hud-focus-ring-width:   2px;
+
+  /* -------------------------------------------------------------------
+     Z-INDEX
+     ------------------------------------------------------------------- */
+
+  --hud-z-base:     0;
+  --hud-z-sidebar:  50;
+  --hud-z-backdrop: 80;
+  --hud-z-drawer:   90;
+  --hud-z-toggle:   100;
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hud-transition: 0ms;
+  }
+}

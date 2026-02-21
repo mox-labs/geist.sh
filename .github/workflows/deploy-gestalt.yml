@@ -1,0 +1,38 @@
+name: Deploy Gestalt
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/experience/**'
+      - '.github/workflows/deploy-gestalt.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: docs/experience
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        working-directory: docs/experience
+        run: bun run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: docs/experience
+          command: pages deploy .svelte-kit/cloudflare --project-name gestalt
