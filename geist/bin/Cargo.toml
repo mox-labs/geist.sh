@@ -1,0 +1,21 @@
+[package]
+name = "geist"
+description = "geist.sh — governed runtime for autonomous agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "geist"
+path = "src/main.rs"
+
+[dependencies]
+act-pdp.workspace = true
+geist-edge = { path = "../edge" }
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true
+clap = { version = "4", features = ["derive"] }
