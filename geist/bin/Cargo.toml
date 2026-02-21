@@ -12,7 +12,7 @@ name = "geist"
 path = "src/main.rs"
 
 [dependencies]
-act-pdp.workspace = true
+geist-policy.workspace = true
 geist-edge = { path = "../edge" }
 tokio.workspace = true
 tracing.workspace = true

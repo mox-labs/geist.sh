@@ -3,16 +3,6 @@
 version = 4
 
 [[package]]
-name = "act-pdp"
-version = "0.0.1"
-dependencies = [
- "rumi",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -249,9 +239,9 @@ dependencies = [
 name = "geist"
 version = "0.0.1"
 dependencies = [
- "act-pdp",
  "clap",
  "geist-edge",
+ "geist-policy",
  "serde_json",
  "tokio",
  "tracing",
@@ -262,12 +252,22 @@ dependencies = [
 name = "geist-edge"
 version = "0.0.1"
 dependencies = [
- "act-pdp",
  "axum",
+ "geist-policy",
  "serde",
  "serde_json",
  "tokio",
  "tower",
+ "tracing",
+]
+
+[[package]]
+name = "geist-policy"
+version = "0.0.1"
+dependencies = [
+ "rumi",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 

@@ -17,7 +17,7 @@ pub use rumi::StringMatchSpec as StringMatch;
 /// # Example
 ///
 /// ```
-/// use act_pdp::prelude::*;
+/// use geist_policy::prelude::*;
 ///
 /// let rule = AgentOpMatch {
 ///     agent_id: Some(StringMatch::Exact("claude-main".into())),

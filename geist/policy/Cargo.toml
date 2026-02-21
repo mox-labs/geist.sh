@@ -1,6 +1,6 @@
 [package]
-name = "act-pdp"
-description = "Policy Decision Point for autonomous agent operations — Agentic Control Theory"
+name = "geist-policy"
+description = "Policy Decision Point for autonomous agent operations"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

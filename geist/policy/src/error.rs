@@ -1,4 +1,4 @@
-//! Error types for the ACT policy decision point.
+//! Error types for the policy decision point.
 
 /// Errors from policy compilation and evaluation.
 #[derive(Debug)]
@@ -69,7 +69,3 @@ impl From<serde_json::Error> for PolicyError {
         }
     }
 }
-
-// Backwards compatibility alias — will be removed in a future version.
-#[doc(hidden)]
-pub type GatewayError = PolicyError;

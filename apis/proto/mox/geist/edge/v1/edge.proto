@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package geist.v1;
+package mox.geist.edge.v1;
 
-import "act/v1/policy.proto";
+import "mox/geist/agent/v1/policy.proto";
 
 // Capability descriptor in the edge registry.
 // Clients invoke capabilities by name; the edge resolves, governs, routes.
@@ -28,10 +28,15 @@ enum CapabilityProtocol {
   CAPABILITY_PROTOCOL_MCP = 3;
 }
 
-// Edge configuration — loaded at startup, updateable via xDS.
+// Edge configuration — loaded at startup, updateable via xDS (ECDS).
+//
+// Agent policies are delivered as typed extension configs via ECDS,
+// allowing dynamic policy updates without edge restart. The control
+// plane translates Gateway API CRDs (AgentPolicy, HTTPRoute) into
+// xDS resources that geist-edge consumes.
 message EdgeConfig {
   // Policy applied to all operations through the edge.
-  act.v1.DenyAllowPolicy policy = 1;
+  mox.geist.agent.v1.DenyAllowPolicy policy = 1;
 
   // Registered capabilities.
   repeated Capability capabilities = 2;

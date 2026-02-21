@@ -14,7 +14,7 @@ use std::collections::HashMap;
 /// then chain builder methods for optional fields:
 ///
 /// ```
-/// use act_pdp::AgentOp;
+/// use geist_policy::AgentOp;
 ///
 /// let op = AgentOp::new("claude-main", "file.read", "/home/user/project/src/lib.rs")
 ///     .with_operation("read")
