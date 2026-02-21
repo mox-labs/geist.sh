@@ -1,0 +1,20 @@
+[package]
+name = "geist-edge"
+description = "Micro-gateway for geist.sh — protocol mediation and policy enforcement"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+act-pdp.workspace = true
+axum = "0.8"
+tower = "0.5"
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
