@@ -97,7 +97,7 @@ pub fn register(
 pub mod prelude {
     pub use super::{
         compile_agent_op_matches, AgentIdInput, AgentOp, AgentOpMatch, AgentOpMatchExt,
-        AllowRule, DenyAllowPolicy, DenyRule, MetadataInput, MetadataMatch, OperationInput,
+        AllowRule, AccessControlPolicy, DenyRule, MetadataInput, MetadataMatch, OperationInput,
         PolicyDecision, PolicyError, PolicyEvaluator, ResourceInput, SessionIdInput, StringMatch,
         ToolNameInput,
     };
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_end_to_end_policy_evaluation() {
-        let policy = DenyAllowPolicy {
+        let policy = AccessControlPolicy {
             deny: vec![DenyRule {
                 reason: "No Bash".into(),
                 matches: vec![AgentOpMatch {

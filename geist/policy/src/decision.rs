@@ -1,4 +1,4 @@
-//! Policy decision types and deny/allow policy configuration.
+//! Policy decision types and access control policy configuration.
 //!
 //! These are pure domain types — zero HTTP types. Translation to
 //! HTTP 403/200 happens in the adapter (geist-edge), not here.
@@ -35,7 +35,7 @@ impl PolicyDecision {
     }
 }
 
-/// A deny/allow policy configuration.
+/// Access control policy configuration.
 ///
 /// Evaluation order is non-negotiable:
 /// 1. Deny rules evaluated first (absolute — if any match, operation is denied)
@@ -47,7 +47,7 @@ impl PolicyDecision {
 /// ```
 /// use geist_policy::prelude::*;
 ///
-/// let policy = DenyAllowPolicy {
+/// let policy = AccessControlPolicy {
 ///     deny: vec![DenyRule {
 ///         reason: "No deleting system files".into(),
 ///         matches: vec![AgentOpMatch {
@@ -66,7 +66,7 @@ impl PolicyDecision {
 /// ```
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct DenyAllowPolicy {
+pub struct AccessControlPolicy {
     /// Deny rules — evaluated first, absolute.
     #[serde(default)]
     pub deny: Vec<DenyRule>,
@@ -118,15 +118,15 @@ mod tests {
     }
 
     #[test]
-    fn deny_allow_policy_default_is_empty() {
-        let p = DenyAllowPolicy::default();
+    fn access_control_policy_default_is_empty() {
+        let p = AccessControlPolicy::default();
         assert!(p.deny.is_empty());
         assert!(p.allow.is_empty());
     }
 
     #[test]
-    fn deny_allow_policy_roundtrips_json() {
-        let policy = DenyAllowPolicy {
+    fn access_control_policy_roundtrips_json() {
+        let policy = AccessControlPolicy {
             deny: vec![DenyRule {
                 reason: "No deletes".into(),
                 matches: vec![AgentOpMatch {
@@ -143,7 +143,7 @@ mod tests {
         };
 
         let json = serde_json::to_string_pretty(&policy).unwrap();
-        let policy2: DenyAllowPolicy = serde_json::from_str(&json).unwrap();
+        let policy2: AccessControlPolicy = serde_json::from_str(&json).unwrap();
         assert_eq!(policy2.deny.len(), 1);
         assert_eq!(policy2.allow.len(), 1);
         assert_eq!(policy2.deny[0].reason, "No deletes");

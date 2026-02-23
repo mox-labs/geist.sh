@@ -17,7 +17,7 @@ All agent traffic flows through geist-edge. The edge governs, observes, and rout
 
 ## Architecture
 
-geist-edge follows the **capability-led connectivity** model: portable processing logic via a unified contract (ProcessingRequest/Response), with adapters for different runtimes.
+geist-edge follows the **capability-led connectivity** model: portable processing logic via the ext_proc unified contract (`ProcessingRequest`/`ProcessingResponse` from Envoy protos, available via `envoy-grpc-ext-proc` crate and re-exported by `rumi-http`), with adapters for different runtimes.
 
 ```
 Tauri (geist-shell)
@@ -41,7 +41,7 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 | Phase | What | Status |
 |-------|------|--------|
 | **P1** | geist-policy PDP — workspace, naming, PolicyError, #[non_exhaustive], Send+Sync | **Done** |
-| **P2** | geist-edge core — ProcessingRequest/Response, Processor trait, pipeline, metadata | Next |
+| **P2** | geist-edge core — Processor trait, compositors (Sequence/Router), MetadataMap (ProcessingRequest/Response come from ext_proc protos, not hand-built) | Next |
 | **P3** | Adapters — axum adapter (first), pingora adapter | |
 | **P4** | Telemetry — OTel processor baked into pipeline | |
 | **P5** | geist-shell — Tauri desktop, SvelteKit frontend | |
@@ -59,7 +59,8 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 
 ## Key Documents
 
-1. `scratch/geist-edge-context-2026-02-22.md` — **START HERE** for geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
+1. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), three deployment models, Agent SDK tool execution research, sandbox-runtime integration.
+2. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
 2. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
 3. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
 4. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
@@ -67,7 +68,11 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 
 ### Blueprint Sources (External)
 
-Architecture concepts sourced from `/Users/yza.vyas/Projects/blueprints/scratch/`:
+Prior art from previous work — concepts apply, documents need sanitization before any public use.
+
+**geist.sh's twist:** Previous work was HTTP/gRPC focused and didn't reach Capability Edge. geist.sh applies these ideas with protocol-agnostic capability management (HTTP, gRPC, MCP, agent protocols) via protocol adapters.
+
+**Research & synthesis** (`blueprints/scratch/`):
 
 | Document | Concepts |
 |----------|----------|
@@ -77,7 +82,17 @@ Architecture concepts sourced from `/Users/yza.vyas/Projects/blueprints/scratch/
 | `composable_data_plane_context.md` | ACES framework, composable data plane |
 | `data-plane-metadata-architecture.md` | Type-safe hierarchical metadata |
 | `research-capability-led-connectivity.md` | API-led → capability-led evolution, policy-processor separation |
-| `research-capability-led-connectivity-ext-proc.md` | ext_proc, unified processing model, Extension Protocol Adapter |
+| `research-capability-led-connectivity-ext-proc.md` | ext_proc protocol lifecycle, unified processing model, Extension Protocol Adapter |
+
+**Case studies** (`blueprints/sources/case-studies/`):
+
+| Document | Concepts |
+|----------|----------|
+| `capability-connectivity-model/mox-apiserver-proxyless.md` | APIServer/APIClient pattern, logical capability IDs, xDS discovery, transparent decomposition |
+| `anatomy-of-a-data-plane/edge-api-platform-era.md` | Enterprise Edge, Extension Protocol Adapter (59 plugins, 6-8 weeks), perimeter vs protocol layers |
+| `anatomy-of-a-data-plane/unified-edge-compute-cluster.md` | Capability Edge, Enterprise Edge, two-boundary architecture, embedded vs sidecar |
+| `engineering-for-sustainable-excellence/aces-unified-processing-model.md` | Unified Processing Model, ProcessingAdaptor, deployment topologies |
+| `engineering-for-sustainable-excellence/aces-framework.md` | ACES framework, boundary-abstraction-implementation pattern |
 
 ## Proto API Naming Convention
 
@@ -104,6 +119,7 @@ apis/proto/mox/geist/
 - **Capability-led connectivity** — processors portable across runtimes via unified contract
 - **Policy-processor separation** — policies (what) decoupled from processors (how)
 - **Open source runtime, service-based business** — gestalt.mox.nexus is the managed platform
+- **ProcessingRequest/Response from ext_proc protos** — not hand-rolled. Via `envoy-grpc-ext-proc`, re-exported by `rumi-http`. `HttpMessage` (indexed view) from `rumi-http`.
 
 ## Git Workflow
 

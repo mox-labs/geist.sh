@@ -1,20 +1,32 @@
 [package]
 name = "geist-edge"
-description = "Micro-gateway for geist.sh — protocol mediation and policy enforcement"
+description = "Composable data plane runtime for geist.sh — processor pipeline and adapters"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
+[features]
+default = []
+adapter-axum = ["dep:axum", "dep:tower", "dep:hyper", "dep:tokio"]
+
 [dependencies]
-geist-policy.workspace = true
-axum = "0.8"
-tower = "0.5"
-tokio.workspace = true
-tracing.workspace = true
+# Core: matcher engine + ext_proc types (ProcessingRequest/Response, HttpMessage)
+rumi.workspace = true
+rumi-http.workspace = true
+envoy-grpc-ext-proc = "0.1"
+
+# Serialization + observability (always)
 serde.workspace = true
 serde_json.workspace = true
+tracing.workspace = true
+
+# Adapter deps (feature-gated)
+axum = { version = "0.8", optional = true }
+tower = { version = "0.5", optional = true }
+hyper = { version = "1", optional = true }
+tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
-tower = { version = "0.5", features = ["util"] }
+tokio = { workspace = true }
