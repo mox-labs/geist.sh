@@ -8,7 +8,7 @@
 
 use crate::compiler::compile_agent_op_matches;
 use crate::context::AgentOp;
-use crate::decision::{AllowRule, DenyAllowPolicy, DenyRule, PolicyDecision};
+use crate::decision::{AllowRule, AccessControlPolicy, DenyRule, PolicyDecision};
 use crate::error::PolicyError;
 use rumi::prelude::*;
 
@@ -23,7 +23,7 @@ struct CompiledAllowRule {
     matcher: Matcher<AgentOp, ()>,
 }
 
-/// Evaluates agent operations against compiled deny/allow policy.
+/// Evaluates agent operations against a compiled access control policy.
 ///
 /// Evaluation order (non-negotiable):
 /// 1. Deny rules — if any match, `Deny` with reason (absolute)
@@ -40,12 +40,12 @@ pub struct PolicyEvaluator {
 }
 
 impl PolicyEvaluator {
-    /// Compile a deny/allow policy into an evaluator.
+    /// Compile an access control policy into an evaluator.
     ///
     /// # Errors
     ///
     /// Returns [`PolicyError`] if any regex pattern is invalid.
-    pub fn compile(policy: DenyAllowPolicy) -> Result<Self, PolicyError> {
+    pub fn compile(policy: AccessControlPolicy) -> Result<Self, PolicyError> {
         let deny_rules = policy
             .deny
             .into_iter()
@@ -72,7 +72,7 @@ impl PolicyEvaluator {
     ///
     /// Returns [`PolicyError`] if JSON is invalid or patterns fail to compile.
     pub fn from_json(json: &str) -> Result<Self, PolicyError> {
-        let policy: DenyAllowPolicy = serde_json::from_str(json)?;
+        let policy: AccessControlPolicy = serde_json::from_str(json)?;
         Self::compile(policy)
     }
 
@@ -147,8 +147,8 @@ mod tests {
     use super::*;
     use crate::config::{AgentOpMatch, StringMatch};
 
-    fn simple_policy() -> DenyAllowPolicy {
-        DenyAllowPolicy {
+    fn simple_policy() -> AccessControlPolicy {
+        AccessControlPolicy {
             deny: vec![DenyRule {
                 reason: "No deleting system files".into(),
                 matches: vec![AgentOpMatch {
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn deny_takes_precedence_over_allow() {
-        let policy = DenyAllowPolicy {
+        let policy = AccessControlPolicy {
             deny: vec![DenyRule {
                 reason: "No destructive operations".into(),
                 matches: vec![AgentOpMatch {
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn empty_policy_denies_everything() {
-        let eval = PolicyEvaluator::compile(DenyAllowPolicy::default()).unwrap();
+        let eval = PolicyEvaluator::compile(AccessControlPolicy::default()).unwrap();
 
         let op = AgentOp::new("any", "any", "/any");
         assert!(eval.evaluate(&op).is_denied());

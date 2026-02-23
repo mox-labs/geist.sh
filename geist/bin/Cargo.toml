@@ -13,7 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 geist-policy.workspace = true
-geist-edge = { path = "../edge" }
+geist-edge = { workspace = true, features = ["adapter-axum"] }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

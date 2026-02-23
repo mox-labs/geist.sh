@@ -36,7 +36,7 @@ enum CapabilityProtocol {
 // xDS resources that geist-edge consumes.
 message EdgeConfig {
   // Policy applied to all operations through the edge.
-  mox.geist.agent.v1.DenyAllowPolicy policy = 1;
+  mox.geist.agent.v1.AccessControlPolicy policy = 1;
 
   // Registered capabilities.
   repeated Capability capabilities = 2;

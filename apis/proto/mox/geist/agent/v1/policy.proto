@@ -72,13 +72,13 @@ message AllowRule {
   repeated AgentOpMatch matches = 1;
 }
 
-// Deny/allow policy configuration.
+// Access control policy configuration.
 //
 // Evaluation order (non-negotiable):
 //   1. Deny rules — if any match, operation is denied (absolute)
 //   2. Allow rules — if any match, operation is allowed
 //   3. Default — deny (no matching rule)
-message DenyAllowPolicy {
+message AccessControlPolicy {
   // Deny rules — evaluated first, absolute.
   repeated DenyRule deny = 1;
 
