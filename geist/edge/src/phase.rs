@@ -24,8 +24,9 @@ pub enum PhaseResult {
 
     /// Apply header mutations, then continue to the next processor.
     ///
-    /// Mutations are composed sequentially: processor N's mutations are
-    /// visible to processor N+1.
+    /// Mutations accumulate across processors in the pipeline and are
+    /// returned to the adapter for application. Processors see the
+    /// original message — not prior mutations.
     Mutate(HeaderMutation),
 
     /// Short-circuit: send this response directly to the client.
@@ -45,22 +46,20 @@ impl PhaseResult {
 
 /// Declares which phases a processor participates in.
 ///
-/// This is a simplified view of the ext_proc `ProcessingMode` — we only
-/// expose what matters for in-process pipelines (headers + buffered body).
-/// Streaming and trailer modes are not relevant for the in-process case.
+/// Request and response headers are always processed — only body phases
+/// are configurable. This is a simplified view of the ext_proc
+/// `ProcessingMode` — we only expose what matters for in-process
+/// pipelines (headers + buffered body). Streaming and trailer modes
+/// are not relevant for the in-process case.
 ///
 /// The pipeline computes the aggregate mode as the union (most-permissive)
 /// of all processor modes: if any processor opts into body processing,
 /// the adapter buffers and delivers body phases to all processors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProcessingMode {
-    /// Process request headers. Always true — cannot opt out.
-    pub request_headers: bool,
-    /// Process response headers. Always true — cannot opt out.
-    pub response_headers: bool,
-    /// Process request body (buffered).
+    /// Process request body (buffered). Default: false.
     pub request_body: bool,
-    /// Process response body (buffered).
+    /// Process response body (buffered). Default: false.
     pub response_body: bool,
 }
 
@@ -68,16 +67,12 @@ impl ProcessingMode {
     /// Headers-only: process request + response headers, skip body.
     /// This is the safe default — most processors only need headers.
     pub const HEADERS_ONLY: Self = Self {
-        request_headers: true,
-        response_headers: true,
         request_body: false,
         response_body: false,
     };
 
     /// Full: process all phases including body.
     pub const FULL: Self = Self {
-        request_headers: true,
-        response_headers: true,
         request_body: true,
         response_body: true,
     };
@@ -89,8 +84,6 @@ impl ProcessingMode {
     #[must_use]
     pub fn union(self, other: Self) -> Self {
         Self {
-            request_headers: self.request_headers || other.request_headers,
-            response_headers: self.response_headers || other.response_headers,
             request_body: self.request_body || other.request_body,
             response_body: self.response_body || other.response_body,
         }
@@ -117,8 +110,6 @@ mod tests {
     #[test]
     fn full_enables_all_phases() {
         let mode = ProcessingMode::FULL;
-        assert!(mode.request_headers);
-        assert!(mode.response_headers);
         assert!(mode.request_body);
         assert!(mode.response_body);
     }

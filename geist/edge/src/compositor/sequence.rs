@@ -29,7 +29,7 @@ impl Default for FailureMode {
 
 /// Outcome of running a phase through the pipeline.
 #[derive(Debug)]
-pub enum PhaseOutcome {
+pub enum SequenceOutcome {
     /// All processors returned Continue (possibly with accumulated mutations).
     Continue(Vec<HeaderMutation>),
     /// A processor returned ImmediateResponse — pipeline terminated.
@@ -38,10 +38,10 @@ pub enum PhaseOutcome {
     Error(ProcessorError),
 }
 
-impl PhaseOutcome {
+impl SequenceOutcome {
     /// Returns `true` if the pipeline should stop all subsequent phases.
     pub fn is_terminal(&self) -> bool {
-        matches!(self, PhaseOutcome::Respond(_) | PhaseOutcome::Error(_))
+        matches!(self, SequenceOutcome::Respond(_) | SequenceOutcome::Error(_))
     }
 }
 
@@ -88,24 +88,22 @@ impl Sequence {
     }
 
     /// Run the request headers phase.
-    pub async fn process_request_headers(&self, msg: &HttpMessage) -> PhaseOutcome {
+    ///
+    /// All processors participate in header phases — there is no opt-out.
+    pub async fn process_request_headers(&self, msg: &HttpMessage) -> SequenceOutcome {
         let mut mutations = Vec::new();
 
         for proc in &self.processors {
-            if !proc.mode().request_headers {
-                continue;
-            }
-
             match proc.process_request_headers(msg).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
                 }
                 Ok(PhaseResult::Respond(response)) => {
-                    return PhaseOutcome::Respond(response);
+                    return SequenceOutcome::Respond(response);
                 }
                 Err(err) => match self.failure_mode {
-                    FailureMode::FailClosed => return PhaseOutcome::Error(err),
+                    FailureMode::FailClosed => return SequenceOutcome::Error(err),
                     FailureMode::FailOpen => {
                         tracing::warn!(
                             processor = proc.name(),
@@ -117,13 +115,13 @@ impl Sequence {
             }
         }
 
-        PhaseOutcome::Continue(mutations)
+        SequenceOutcome::Continue(mutations)
     }
 
     /// Run the request body phase.
-    pub async fn process_request_body(&self, body: &[u8]) -> PhaseOutcome {
+    pub async fn process_request_body(&self, body: &[u8]) -> SequenceOutcome {
         if !self.aggregate_mode.request_body {
-            return PhaseOutcome::Continue(vec![]);
+            return SequenceOutcome::Continue(vec![]);
         }
 
         let mut mutations = Vec::new();
@@ -139,10 +137,10 @@ impl Sequence {
                     mutations.push(mutation);
                 }
                 Ok(PhaseResult::Respond(response)) => {
-                    return PhaseOutcome::Respond(response);
+                    return SequenceOutcome::Respond(response);
                 }
                 Err(err) => match self.failure_mode {
-                    FailureMode::FailClosed => return PhaseOutcome::Error(err),
+                    FailureMode::FailClosed => return SequenceOutcome::Error(err),
                     FailureMode::FailOpen => {
                         tracing::warn!(
                             processor = proc.name(),
@@ -154,28 +152,26 @@ impl Sequence {
             }
         }
 
-        PhaseOutcome::Continue(mutations)
+        SequenceOutcome::Continue(mutations)
     }
 
     /// Run the response headers phase.
-    pub async fn process_response_headers(&self, msg: &HttpMessage) -> PhaseOutcome {
+    ///
+    /// All processors participate in header phases — there is no opt-out.
+    pub async fn process_response_headers(&self, msg: &HttpMessage) -> SequenceOutcome {
         let mut mutations = Vec::new();
 
         for proc in &self.processors {
-            if !proc.mode().response_headers {
-                continue;
-            }
-
             match proc.process_response_headers(msg).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
                 }
                 Ok(PhaseResult::Respond(response)) => {
-                    return PhaseOutcome::Respond(response);
+                    return SequenceOutcome::Respond(response);
                 }
                 Err(err) => match self.failure_mode {
-                    FailureMode::FailClosed => return PhaseOutcome::Error(err),
+                    FailureMode::FailClosed => return SequenceOutcome::Error(err),
                     FailureMode::FailOpen => {
                         tracing::warn!(
                             processor = proc.name(),
@@ -187,13 +183,13 @@ impl Sequence {
             }
         }
 
-        PhaseOutcome::Continue(mutations)
+        SequenceOutcome::Continue(mutations)
     }
 
     /// Run the response body phase.
-    pub async fn process_response_body(&self, body: &[u8]) -> PhaseOutcome {
+    pub async fn process_response_body(&self, body: &[u8]) -> SequenceOutcome {
         if !self.aggregate_mode.response_body {
-            return PhaseOutcome::Continue(vec![]);
+            return SequenceOutcome::Continue(vec![]);
         }
 
         let mut mutations = Vec::new();
@@ -209,10 +205,10 @@ impl Sequence {
                     mutations.push(mutation);
                 }
                 Ok(PhaseResult::Respond(response)) => {
-                    return PhaseOutcome::Respond(response);
+                    return SequenceOutcome::Respond(response);
                 }
                 Err(err) => match self.failure_mode {
-                    FailureMode::FailClosed => return PhaseOutcome::Error(err),
+                    FailureMode::FailClosed => return SequenceOutcome::Error(err),
                     FailureMode::FailOpen => {
                         tracing::warn!(
                             processor = proc.name(),
@@ -224,7 +220,7 @@ impl Sequence {
             }
         }
 
-        PhaseOutcome::Continue(mutations)
+        SequenceOutcome::Continue(mutations)
     }
 }
 
@@ -433,7 +429,7 @@ mod tests {
         let seq = Sequence::builder().build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Continue(m) if m.is_empty()));
+        assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 
     #[tokio::test]
@@ -443,7 +439,7 @@ mod tests {
             .build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Continue(m) if m.is_empty()));
+        assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 
     #[tokio::test]
@@ -454,7 +450,7 @@ mod tests {
             .build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Respond(_)));
+        assert!(matches!(outcome, SequenceOutcome::Respond(_)));
     }
 
     #[tokio::test]
@@ -472,7 +468,7 @@ mod tests {
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
         match outcome {
-            PhaseOutcome::Continue(mutations) => {
+            SequenceOutcome::Continue(mutations) => {
                 assert_eq!(mutations.len(), 2);
             }
             _ => panic!("expected Continue with mutations"),
@@ -490,7 +486,7 @@ mod tests {
             .build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Respond(_)));
+        assert!(matches!(outcome, SequenceOutcome::Respond(_)));
     }
 
     #[tokio::test]
@@ -502,7 +498,7 @@ mod tests {
             .build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Error(_)));
+        assert!(matches!(outcome, SequenceOutcome::Error(_)));
     }
 
     #[tokio::test]
@@ -514,7 +510,7 @@ mod tests {
             .build();
         let msg = empty_message();
         let outcome = seq.process_request_headers(&msg).await;
-        assert!(matches!(outcome, PhaseOutcome::Continue(_)));
+        assert!(matches!(outcome, SequenceOutcome::Continue(_)));
     }
 
     #[tokio::test]
@@ -535,7 +531,7 @@ mod tests {
             .build();
         assert!(!seq.mode().request_body);
         let outcome = seq.process_request_body(b"hello").await;
-        assert!(matches!(outcome, PhaseOutcome::Continue(m) if m.is_empty()));
+        assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 
     #[tokio::test]
@@ -551,7 +547,7 @@ mod tests {
         let outcome = seq.process_request_headers(&msg).await;
 
         // DenyProcessor fires first, recorder never gets request headers
-        assert!(matches!(outcome, PhaseOutcome::Respond(_)));
+        assert!(matches!(outcome, SequenceOutcome::Respond(_)));
         assert!(!recorder
             .request_headers_called
             .load(std::sync::atomic::Ordering::SeqCst));
