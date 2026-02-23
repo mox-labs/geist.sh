@@ -22,6 +22,9 @@ use rumi_http::HttpMessage;
 use crate::phase::{PhaseResult, ProcessingMode};
 
 /// Boxed future for dyn-compatible async trait methods.
+///
+/// `async fn` in traits is not dyn-compatible, and the pipeline uses
+/// `Arc<dyn Processor>`. Wrap your async block: `Box::pin(async { ... })`.
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// Error returned by a processor when it fails to process a phase.
@@ -99,11 +102,12 @@ pub trait Processor: Send + Sync {
     /// Human-readable name for logging and diagnostics.
     fn name(&self) -> &str;
 
-    /// Declares which phases this processor participates in.
+    /// Declares which body phases this processor participates in.
     ///
-    /// Default: headers-only (request + response headers, no body).
+    /// Default: headers-only (no body processing).
     /// Override if you implement body methods.
     ///
+    /// Header phases are always processed — all processors participate.
     /// The pipeline computes the aggregate mode as the union (most-permissive)
     /// of all processor modes. If any processor opts into body processing,
     /// the adapter will buffer and deliver body phases to all processors.
