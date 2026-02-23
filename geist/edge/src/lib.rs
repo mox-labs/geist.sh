@@ -20,7 +20,7 @@ pub mod processor;
 
 /// Prelude for convenient imports.
 pub mod prelude {
-    pub use crate::compositor::{FailureMode, Sequence, SequenceBuilder};
+    pub use crate::compositor::{FailureMode, Sequence, SequenceBuilder, SequenceOutcome};
     pub use crate::phase::{PhaseResult, ProcessingMode};
     pub use crate::processor::{BoxFuture, Processor, ProcessorError};
     pub use rumi_http::HttpMessage;

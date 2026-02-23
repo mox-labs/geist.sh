@@ -10,4 +10,4 @@
 
 mod sequence;
 
-pub use sequence::{FailureMode, Sequence, SequenceBuilder};
+pub use sequence::{FailureMode, Sequence, SequenceBuilder, SequenceOutcome};
