@@ -1010,12 +1010,12 @@ For the geist-gateway (Rust, HTTP adapter) in the geist.sh architecture:
 **Proxyless gRPC is not directly applicable** because:
 1. The gateway is Rust, and gRPC Rust does not yet have xDS support (though the 2025 gRPC roadmap mentions native xDS for Rust as a future initiative).
 2. The gateway handles HTTP (Axum), not exclusively gRPC.
-3. geist-policy (the PDP) is a library crate, not a networked service.
+3. geist-policy (AccessControlProcessor) is a library crate, not a networked service.
 
 **Where proxyless gRPC becomes relevant for geist.sh**:
 - If geist agents (Python, Claude Agent SDK) communicate via gRPC, proxyless could govern agent-to-service calls with the control plane being the shell's policy layer.
 - The xDS protocol itself (LDS/RDS/CDS/EDS) is a reference model for how the geist-gateway could distribute policy decisions -- the "configuration plane" pattern.
-- The RBAC filter model (SPIFFE-based identity, deny-first evaluation, chain of engines) maps well to geist-policy's existing PolicyEvaluator pattern.
+- The RBAC filter model (SPIFFE-based identity, deny-first evaluation, chain of engines) maps well to geist-edge's processor pipeline — each processor compiles its own policy to rumi matchers.
 
 ---
 

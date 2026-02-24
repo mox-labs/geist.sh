@@ -433,7 +433,7 @@ Based on architectural review (2026-02-23):
 | Correction | Status | Notes |
 |------------|--------|-------|
 | `DenyAllowPolicy` → `AccessControlPolicy` | Done | Name describes what, not how |
-| `PolicyEvaluator` hidden from processors | Done | Internal to `AccessControlProcessor` |
+| `PolicyEvaluator` removed — each processor owns its policy | Done | No generic PDP; processors compile policy → rumi matchers directly |
 | `x-geist-*` synthetic headers → real HTTP + MCP body | Pending | Current processor uses provisional header convention; will evolve with adapter layer |
 | sandbox-runtime as primary OS-level story (not eBPF) | Done (docs) | eBPF is Linux-only additive layer |
 
