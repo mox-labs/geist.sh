@@ -67,17 +67,33 @@ pub trait IntoProcessor: Send + Sync + 'static {
 
 /// A self-contained processor registration for distributed static collection.
 ///
-/// Extension crates submit these via `inventory::submit!`. The binary
-/// collects them via [`ProcessorRegistryBuilder::collect_extensions`].
+/// Extension crates submit these via [`register_processor!`] (preferred) or
+/// raw `inventory::submit!` (advanced). The binary collects them via
+/// [`ProcessorRegistryBuilder::collect_extensions`].
 ///
 /// # Example
+///
+/// Preferred — via macro (handles deserialization + error wrapping):
+///
+/// ```ignore
+/// geist_edge::register_processor!(
+///     "mox.geist.processors.v1.AccessControl",
+///     AccessControlProcessor
+/// );
+/// ```
+///
+/// Advanced — raw registration (custom deserialization logic):
 ///
 /// ```ignore
 /// inventory::submit! {
 ///     ProcessorRegistration {
 ///         type_url: "mox.geist.processors.v1.AccessControl",
 ///         factory: |value| {
-///             let config: AccessControlPolicy = serde_json::from_value(value.clone())?;
+///             let config: AccessControlPolicy = serde_json::from_value(value.clone())
+///                 .map_err(|e| ProcessorError::new(
+///                     "mox.geist.processors.v1.AccessControl",
+///                     format!("config deserialization failed: {e}"),
+///                 ))?;
 ///             AccessControlProcessor::from_config(config)
 ///         },
 ///     }
@@ -91,6 +107,46 @@ pub struct ProcessorRegistration {
 }
 
 inventory::collect!(ProcessorRegistration);
+
+/// Register a processor extension via `inventory::submit!`.
+///
+/// Bridges the [`IntoProcessor`] trait to distributed static registration,
+/// eliminating the boilerplate of manual deserialization and error wrapping.
+///
+/// # Example
+///
+/// ```ignore
+/// use geist_edge::register_processor;
+///
+/// register_processor!(
+///     "mox.geist.processors.v1.AccessControl",
+///     AccessControlProcessor
+/// );
+/// ```
+///
+/// Expands to an `inventory::submit!` with correct deserialization,
+/// error wrapping (using the type URL as processor name), and
+/// `IntoProcessor::from_config` call.
+#[macro_export]
+macro_rules! register_processor {
+    ($type_url:expr, $processor_type:ty) => {
+        ::inventory::submit! {
+            $crate::registry::ProcessorRegistration {
+                type_url: $type_url,
+                factory: |value| {
+                    let config: <$processor_type as $crate::registry::IntoProcessor>::Config =
+                        ::serde_json::from_value(value.clone()).map_err(|e| {
+                            $crate::processor::ProcessorError::new(
+                                $type_url,
+                                format!("config deserialization failed: {e}"),
+                            )
+                        })?;
+                    <$processor_type as $crate::registry::IntoProcessor>::from_config(config)
+                },
+            }
+        }
+    };
+}
 
 // Type-erased factory stored in the registry.
 type BoxedFactory =
@@ -118,9 +174,23 @@ impl ProcessorRegistryBuilder {
     /// Call once in the composition root. This never changes regardless
     /// of how many extensions exist — adding an extension only requires
     /// a Cargo dependency and a config entry.
+    ///
+    /// # Panics
+    ///
+    /// Panics if two extensions register the same type URL. Duplicate
+    /// registrations are a configuration error — silent override would
+    /// be non-deterministic (depends on platform-specific static init
+    /// ordering).
     #[must_use]
     pub fn collect_extensions(mut self) -> Self {
         for reg in inventory::iter::<ProcessorRegistration> {
+            if self.factories.contains_key(reg.type_url) {
+                panic!(
+                    "duplicate processor type URL '{}' — two extensions claim the same type URL. \
+                     Each type URL must be registered exactly once.",
+                    reg.type_url
+                );
+            }
             self.factories.insert(
                 reg.type_url.to_owned(),
                 Box::new(reg.factory),
