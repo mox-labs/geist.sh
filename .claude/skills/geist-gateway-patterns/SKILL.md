@@ -21,19 +21,18 @@ geist.sh is a Gateway API implementation that governs two domains through one en
 ```
                     geist-edge
                     ┌──────────────────────────────┐
-HTTP/gRPC traffic ─→│  rumi + HttpMessage inputs    │─→ upstream
-                    │                              │
-Agent tool calls ──→│  rumi + AgentOp inputs        │─→ tool execution
+HTTP/gRPC traffic ─→│  Typed extension registry     │─→ upstream
+                    │  Processors registered by     │
+Agent tool calls ──→│  type URL + factory            │─→ tool execution
                     └──────────────────────────────┘
-                    Policy: Gateway API CRDs for both
+                    Processors compile policy → rumi matchers
 ```
 
-Same rumi matcher engine. Same `DataInput` + `FieldMatcher` + `MatcherTree` core. Different domain inputs registered:
+Same rumi matcher engine across all processors. Each processor registers its own `DataInput` impls for `HttpMessage` and compiles its policy config to rumi matchers at construction.
 
-| Domain | Context Type | Inputs | Compiles From |
-|--------|-------------|--------|---------------|
-| HTTP | `HttpMessage` | path, method, header, query, scheme, authority | `HttpRouteMatch` |
-| Agent | `AgentOp` | agent_id, tool_name, resource, operation, session_id, metadata | `AgentOpMatch` |
+| Domain | Context Type | Inputs | Processor Example |
+|--------|-------------|--------|-------------------|
+| HTTP | `HttpMessage` | path, method, header, query, scheme, authority | AccessControlProcessor, RateLimiterProcessor |
 
 The positioning: **MCP = socket, A2A = network, geist.sh = firewall.**
 
@@ -222,7 +221,7 @@ Least invasive ─────────────────────�
 ext_authz → ext_proc → Wasm → Native C++ filter
 ```
 
-`ext_authz` = external authorization callout. **This is geist-policy's analog** — the PDP is an ext_authz-style decision point.
+`ext_authz` = external authorization callout. geist-edge's `AccessControlProcessor` (from geist-policy) is an ext_authz-style decision point — but in-process, not a callout.
 
 > **Reference**: `references/control-plane-patterns.md` — architecture diagrams, deployment topologies, agent governance mapping
 
@@ -236,8 +235,8 @@ The service mesh → agent governance analogy:
 |-------------|----------|------|
 | Envoy proxy | Agent runtime (shell) | Data plane — enforces policy |
 | xDS config | PolicyRuleset | Distributed configuration |
-| ext_authz callout | geist-policy PDP | Per-request policy decision |
-| `HttpRouteMatch` | `AgentOpMatch` | Request/operation matching |
+| ext_authz callout | AccessControlProcessor (in-process) | Per-request policy decision |
+| `HttpRouteMatch` | rumi matcher on `HttpMessage` | Request/operation matching |
 | SecurityPolicy CRD | AgentPolicy CRD | Policy declaration |
 | Control plane (istiod) | geist control plane | Config translation + distribution |
 | Sidecar / ambient | Shell runtime | Interception mode |
@@ -277,7 +276,7 @@ spec:
 
 | Mode | Analog | When |
 |------|--------|------|
-| **Library** (geist-policy in-process) | Proxyless gRPC | Lowest latency, Claude Code hook |
+| **Library** (geist-edge in-process) | Proxyless gRPC | Lowest latency, Claude Code hook |
 | **Sidecar** (geist-edge per-agent) | Envoy sidecar | Per-agent isolation |
 | **Gateway** (shared geist-edge) | Ingress gateway | Multi-agent, central policy |
 
@@ -289,7 +288,7 @@ spec:
 
 | Scale | Approach | Implementation |
 |-------|----------|----------------|
-| Single agent, local | In-process library | `geist-policy` crate directly |
+| Single agent, local | In-process library | `geist-edge` with processors linked in |
 | Few agents, one host | gRPC streaming | Custom, no xDS overhead |
 | Fleet, Kubernetes | xDS via go-control-plane | Full Gateway API conformance |
 
@@ -300,7 +299,7 @@ spec:
 | Agent-to-agent gRPC, latency-critical | Proxyless gRPC |
 | Mixed protocols, full observability | Sidecar (geist-edge) |
 | External traffic ingress | Gateway mode |
-| Agent tool governance only | In-process PDP (no proxy needed) |
+| Agent tool governance only | In-process processor pipeline (no proxy needed) |
 
 ### Gateway API Extension Checklist
 
@@ -326,6 +325,7 @@ When creating a new policy CRD for geist.sh:
 
 ## Cross-References
 
-- **geist-rust-mastery** — Rust architectural judgment for implementing gateway/PDP
+- **geist-rust-mastery** — Rust architectural judgment for implementing gateway processors
 - **rumi-http** (`x.uma/rumi/ext/http/`) — HTTP domain inputs, Gateway API HttpRouteMatch compiler
-- **geist-policy** (`geist/policy/`) — Agent domain inputs, AgentOp policy evaluator
+- **typed-extension-registry** (`.claude/docs/typed-extension-registry.md`) — IntoProcessor, ProcessorRegistry, Envoy + rumi patterns
+- **geist-policy** (`geist/policy/`) — AccessControlProcessor, AccessControlPolicy config type
