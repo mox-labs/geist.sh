@@ -55,7 +55,11 @@ impl Processor for AccessControlProcessor {
             match decision {
                 PolicyDecision::Allow => Ok(PhaseResult::Continue),
                 PolicyDecision::Deny { reason } => {
-                    let body = format!(r#"{{"error":"access_denied","reason":"{reason}"}}"#);
+                    let body = serde_json::json!({
+                        "error": "access_denied",
+                        "reason": reason
+                    })
+                    .to_string();
                     Ok(PhaseResult::Respond(ImmediateResponse {
                         status: Some(HttpStatus { code: 403 }),
                         body: body.into_bytes(),
