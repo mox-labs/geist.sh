@@ -1,5 +1,5 @@
 [package]
-name = "geist-access-control"
+name = "geist-acl"
 description = "Access control processor extension for geist-edge"
 version.workspace = true
 edition.workspace = true

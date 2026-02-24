@@ -62,7 +62,7 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 |-------|------|------|
 | `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, adapters |
 | `geist` | `geist/bin` | Binary — composition root, wires extensions + adapter |
-| `geist-access-control` | `geist/access-control` | Access control processor extension (P1.5) |
+| `geist-acl` | `geist/acl` | Access control processor extension (P1.5) |
 
 ## Key Documents
 
