@@ -9,9 +9,8 @@ Desktop AI collaborator for knowledge workers. A packaged app where users set up
 
 A desktop application (Tauri) for knowledge workers — not just developers. Users set up their collaborator(s) with pre-installed skills, and the agent operates within a governed runtime (geist-edge). Think OpenClaw but for knowledge workers, with capability-led connectivity as the runtime model.
 
-- **geist-edge** = the composable data plane runtime. Implements the Extension Protocol Adapter pattern — portable processing capabilities across runtimes (axum, pingora, ext_proc). Same building blocks at edge and per-service.
+- **geist-edge** = the composable data plane runtime. Implements the Extension Protocol Adapter pattern — portable processing capabilities across runtimes (axum, pingora, ext_proc). Same building blocks at edge and per-service. Includes typed extension registry for processor pluggability.
 - **geist-shell** = Tauri desktop container. SvelteKit frontend in webview.
-- **geist-policy** = Policy Decision Point. Deny-first evaluation, already built (48 tests).
 
 All agent traffic flows through geist-edge. The edge governs, observes, and routes.
 
@@ -24,15 +23,22 @@ Tauri (geist-shell)
   └─ geist-edge (axum adapter)
       ├─ ProtocolServer: inbound → processors → agent
       ├─ ProtocolClient: agent → processors → external
-      ├─ Processors: auth, policy, telemetry, routing
+      ├─ Processors: registered via typed extension registry (type URL → factory)
       └─ Metadata: type-safe inter-processor communication
           └─ Agent runtime (Claude SDK) — all calls through edge
 ```
 
+**Typed Extension Registry** (same pattern as rumi `RegistryBuilder` and Envoy `FactoryRegistry`):
+- Processors register via type URL + factory (`IntoProcessor` trait with associated `Config` type)
+- Pipeline config is a list of `TypedConfig { type_url, config }` entries
+- Each processor owns its policy type — no generic PolicyEvaluator
+- Registry is immutable after build (builder pattern → frozen registry)
+- Extension crates self-register via `inventory::submit!` — zero code changes to core or binary
+
 **ACES** (Adaptable, Composable, Extensible Software) is the architectural quality:
 - **Adaptable**: swap adapter (axum → pingora → ext_proc) without touching processors
 - **Composable**: processors compose through pipeline + metadata, not direct coupling
-- **Extensible**: add processor = add capability, no core or adapter changes
+- **Extensible**: add processor = register extension + config entry, no core or adapter changes
 
 See `scratch/geist-edge-context-2026-02-22.md` for full architecture with blueprint source citations.
 
@@ -40,31 +46,34 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 
 | Phase | What | Status |
 |-------|------|--------|
-| **P1** | geist-policy PDP — workspace, naming, PolicyError, #[non_exhaustive], Send+Sync | **Done** |
-| **P2** | geist-edge core — Processor trait, compositors (Sequence/Router), MetadataMap (ProcessingRequest/Response come from ext_proc protos, not hand-built) | Next |
-| **P3** | Adapters — axum adapter (first), pingora adapter | |
-| **P4** | Telemetry — OTel processor baked into pipeline | |
+| **P1** | geist-edge core — Processor trait, Sequence compositor, PhaseResult, ProcessingMode | **Done** (67 tests) |
+| **P1.5** | Typed extension registry + access control processor extension | **Next** |
+| **P2** | axum adapter + governed proxy binary | |
+| **P3** | Composer (intent → capability selection from cix catalog) | |
+| **P4** | CLI demo (compose → configure → edge → agent session) | |
 | **P5** | geist-shell — Tauri desktop, SvelteKit frontend | |
-| **P6+** | Agent runtime, skills, AgentPolicy CRDs, Escalate variant, control plane | Later |
+| **P6+** | Enterprise: Router compositor, OTel, pingora, xDS transport, control plane | Growth |
 
-**Note:** Claude Code hook enforcement (originally P2) moved to x.uma as the rumi CLI. See `x.uma/scratch/rumi-cli-claude-hooks-2026-02-22.md`.
+**Note:** Claude Code hook enforcement moved to x.uma as the rumi CLI.
 
 ## Crate Layout
 
 | Crate | Path | Role |
 |-------|------|------|
-| `geist-policy` | `geist/policy` | PDP domain core (48 tests) |
-| `geist-edge` | `geist/edge` | Composable data plane runtime (stub) |
-| `geist` | `geist/bin` | Binary (stub) |
+| `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, adapters |
+| `geist` | `geist/bin` | Binary — composition root, wires extensions + adapter |
+| `geist-access-control` | `geist/access-control` | Access control processor extension (P1.5) |
 
 ## Key Documents
 
-1. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), three deployment models, Agent SDK tool execution research, sandbox-runtime integration.
-2. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
-2. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
-3. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
-4. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
-5. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
+1. `.claude/docs/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
+2. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
+3. `.claude/docs/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
+4. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
+5. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
+6. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
+7. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
+8. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
 
 ### Blueprint Sources (External)
 
@@ -107,17 +116,16 @@ apis/proto/mox/geist/
 ## Settled Decisions (Not Open for Debate)
 
 - **Deny-first evaluation** — consensus across Cedar, SCT, OWASP
-- **`&self` PolicyEvaluator** — enables Arc sharing, hyper school pattern
-- **Hexagonal architecture** — domain crate has zero HTTP types
-- **AgentOp as domain context** — 6 fields: agent_id, tool_name, resource, operation, session_id, metadata
+- **`&self` Processor trait** — enables Arc sharing, hyper school pattern
+- **Hexagonal architecture** — edge core has zero HTTP types without adapter features
+- **Typed extension registry** — processors register via type URL + factory (same pattern as rumi RegistryBuilder and Envoy FactoryRegistry). Each processor owns its policy/config type. No generic PolicyEvaluator.
+- **Policy-processor separation** — each processor owns its config/policy type and compiles to rumi matchers at construction. No generic PolicyEvaluator, no AgentOp intermediary.
 - **Tower in HTTP adapter only** — never in domain core
 - **xDS namespace: `mox.geist.{domain}.v1`** — follows Envoy convention
 - **"Agentic Control Theory" is research framing only** — not in code or wire format
-- **AgentPolicy as Gateway API extension** — GEP-713 pattern
-- **ECDS for agent policy distribution** — dynamic updates without edge restart
+- **ECDS for processor config distribution** — dynamic updates without edge restart (TypedExtensionConfig envelope)
 - **ACES as system quality** — not a specific pattern, achieved through implementation choices
 - **Capability-led connectivity** — processors portable across runtimes via unified contract
-- **Policy-processor separation** — policies (what) decoupled from processors (how)
 - **Open source runtime, service-based business** — gestalt.mox.nexus is the managed platform
 - **ProcessingRequest/Response from ext_proc protos** — not hand-rolled. Via `envoy-grpc-ext-proc`, re-exported by `rumi-http`. `HttpMessage` (indexed view) from `rumi-http`.
 
