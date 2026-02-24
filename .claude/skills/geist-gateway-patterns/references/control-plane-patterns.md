@@ -770,20 +770,20 @@ Four mechanisms, from least to most invasive:
 ext_authz is the closest service mesh analog to geist.sh's policy evaluation:
 
 ```
-  Service Mesh (ext_authz)              geist.sh (policy evaluation)
+  Service Mesh (ext_authz)              geist.sh (processor pipeline)
 
-  +--------+    +----------+           +--------+    +-------------+
-  | Envoy  |--->| ext_authz|           | Agent  |--->| geist-policy|
-  | Proxy  |    | Service  |           | (L4)   |    | (PDP)       |
-  +--------+    +----------+           +--------+    +-------------+
+  +--------+    +----------+           +--------+    +-------------------+
+  | Envoy  |--->| ext_authz|           | geist  |--->| AccessControl-    |
+  | Proxy  |    | Service  |           | -edge  |    | Processor         |
+  +--------+    +----------+           +--------+    +-------------------+
        |              |                     |               |
-  Request         Allow/Deny           AgentOp         PolicyDecision
-  metadata        + headers            context         (Allow/Deny)
+  Request         Allow/Deny           HttpMessage     PhaseResult
+  metadata        + headers            (indexed)       (Continue/Respond)
 
   Both:
   - Sit on the request path
-  - Receive structured context (request metadata / AgentOp)
-  - Return binary decision (allow/deny) with optional metadata
+  - Receive structured context (request metadata / HttpMessage)
+  - Return decision (allow/deny) with optional mutations
   - Are stateless per-evaluation
   - Policy config comes from control plane / config layer
 ```
@@ -889,8 +889,8 @@ The core insight: geist.sh's policy distribution architecture is structurally is
   (xDS push / gRPC stream)         (in-process / gRPC)
        |                                   |
        v                                   v
-  Proxy enforces per-request        Shell enforces per-AgentOp
-  (allow/deny + routing)            (Allow/Deny + audit)
+  Proxy enforces per-request        Edge enforces per-request
+  (allow/deny + routing)            (Continue/Respond + audit)
 ```
 
 ### 10.2 Concept Mapping
@@ -902,10 +902,10 @@ The core insight: geist.sh's policy distribution architecture is structurally is
 | **Listener** | Tool/capability endpoint | What the agent can invoke |
 | **Route** | Policy rule match | How requests are classified |
 | **Cluster** | Upstream resource/service | What the agent accesses |
-| **ext_authz** | geist-policy (PDP) | Per-request authorization |
-| **Service identity (SPIFFE)** | agent_id | Who is making the request |
-| **Request context** | AgentOp | Structured context for policy evaluation |
-| **PolicyDecision** | Allow/Deny/Escalate | Three-valued lattice (richer than mesh) |
+| **ext_authz** | AccessControlProcessor (in-process) | Per-request authorization |
+| **Service identity (SPIFFE)** | agent_id (from headers) | Who is making the request |
+| **Request context** | HttpMessage (indexed headers) | Structured context for policy evaluation |
+| **PhaseResult** | Continue/Mutate/Respond | Three-outcome model (richer than mesh allow/deny) |
 | **VirtualService CRD** | Policy config file | Operator-authored intent |
 | **istiod / control plane** | geist-gateway (L2) | Translation + distribution |
 | **Sidecar resource** | Config scoping per agent | Namespace isolation analog |
@@ -957,8 +957,8 @@ geist.sh's three deployment modes map directly to service mesh topologies:
      | Your Rust Application      |
      |                            |
      |  +---------------------+  |
-     |  | geist-policy (crate)|  |
-     |  | evaluate(AgentOp)   |  |
+     |  | geist-edge (crate)  |  |
+     |  | processor pipeline  |  |
      |  +---------------------+  |
      +----------------------------+
 
@@ -998,7 +998,7 @@ The agent governance domain has capabilities that exceed service mesh patterns:
 
 **Self-composition**: The agent modifies its own capabilities. There is no service mesh analog -- proxies don't modify their own filter chains. This requires the control plane to reason about meta-policy: "Is the agent allowed to change what it's allowed to do?"
 
-**Session context**: AgentOp carries session_id and metadata. Policy can be stateful across a session -- something meshes explicitly avoid (stateless per-request evaluation). This is a deliberate architectural choice for agent governance.
+**Session context**: Processors can use metadata to carry session context. Policy can be stateful across a session -- something meshes explicitly avoid (stateless per-request evaluation). This is a deliberate architectural choice for agent governance.
 
 ---
 
