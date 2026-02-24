@@ -47,7 +47,7 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 | Phase | What | Status |
 |-------|------|--------|
 | **P1** | geist-edge core — Processor trait, Sequence compositor, PhaseResult, ProcessingMode | **Done** (67 tests) |
-| **P1.5** | Typed extension registry + access control processor extension | **Next** |
+| **P1.5** | Typed extension registry + access control processor extension | **Done** (40 tests, 3 PRs: #8 registry, #9 access-control, #10 composition root) |
 | **P2** | axum adapter + governed proxy binary | |
 | **P3** | Composer (intent → capability selection from cix catalog) | |
 | **P4** | CLI demo (compose → configure → edge → agent session) | |
