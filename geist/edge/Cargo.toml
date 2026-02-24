@@ -17,6 +17,9 @@ rumi.workspace = true
 rumi-http.workspace = true
 envoy-grpc-ext-proc = "0.1"
 
+# Extension registration
+inventory.workspace = true
+
 # Serialization + observability (always)
 serde.workspace = true
 serde_json.workspace = true
