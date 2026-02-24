@@ -422,7 +422,6 @@ version = "0.0.1"
 dependencies = [
  "clap",
  "geist-edge",
- "geist-policy",
  "serde_json",
  "tokio",
  "tracing",
@@ -442,16 +441,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tower",
- "tracing",
-]
-
-[[package]]
-name = "geist-policy"
-version = "0.0.1"
-dependencies = [
- "rumi-core",
- "serde",
- "serde_json",
  "tracing",
 ]
 
@@ -1177,7 +1166,6 @@ version = "0.0.2"
 dependencies = [
  "regex",
  "serde",
- "serde_json",
 ]
 
 [[package]]
