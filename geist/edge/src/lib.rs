@@ -17,12 +17,17 @@
 pub mod compositor;
 pub mod phase;
 pub mod processor;
+pub mod registry;
 
 /// Prelude for convenient imports.
 pub mod prelude {
     pub use crate::compositor::{FailureMode, Sequence, SequenceBuilder, SequenceOutcome};
     pub use crate::phase::{PhaseResult, ProcessingMode};
     pub use crate::processor::{BoxFuture, Processor, ProcessorError};
+    pub use crate::registry::{
+        IntoProcessor, ProcessorRegistration, ProcessorRegistry, ProcessorRegistryBuilder,
+        TypedConfig,
+    };
     pub use rumi_http::HttpMessage;
 
     // Re-export ext_proc types that processor implementors need.
