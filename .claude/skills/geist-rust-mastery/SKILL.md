@@ -1,9 +1,10 @@
 # geist-rust-mastery
 
-Rust architectural judgment for geist.sh. Use when: designing x.uma gateway or matcher,
-Tauri desktop shell patterns, PyO3 FFI boundary, eBPF programs for srt, concurrency and
-lock-free patterns, observability with tracing, choosing `&self` vs `&mut self`, or making
-compile-time vs runtime enforcement decisions. For judgment, not syntax.
+Rust architectural judgment for geist.sh. Use when: designing geist-edge gateway or matcher,
+building the axum reverse proxy, Tauri desktop shell patterns, PyO3 FFI boundary, eBPF
+programs for srt, concurrency and lock-free patterns, observability with tracing, choosing
+`&self` vs `&mut self`, or making compile-time vs runtime enforcement decisions. For judgment,
+not syntax.
 
 ## Contents
 
@@ -11,7 +12,9 @@ compile-time vs runtime enforcement decisions. For judgment, not syntax.
 - [What Claude Gets Wrong](#what-claude-gets-wrong)
 - [Security: Freeze vs Configure](#security-freeze-vs-configure)
 - [Schools of Rust](#schools-of-rust)
+- [Reverse Proxy Patterns](#reverse-proxy-patterns-geist-edge)
 - [Gateway Design Tensions](#gateway-design-tensions-xuma)
+- [Tauri Embedding](#tauri-embedding-geist-shell)
 - [FFI Boundary](#ffi-boundary-geist--shell)
 - [eBPF Specifics](#ebpf-specifics-srt--aya)
 - [Anti-Patterns With Evidence](#anti-patterns-with-evidence)
@@ -52,6 +55,11 @@ The skill exists to correct these.
 | One-size IPC for all messages | <8KB direct, larger via queue | Tauri measured 2x difference |
 | "Idiomatic Rust" (one school) | 7 distinct schools with different design philosophies | See [Schools of Rust](#schools-of-rust) |
 | AFIT (async fn in trait) is ready | Can't add Send bounds, not dyn-safe | tower + hyper BOTH declined |
+| H1 and H2 bodies are equivalent | H2 body pipe is unbounded; 0-byte H1 write finishes stream; H2 ignores it | pingora battle scars |
+| Retry all upstream errors | Only retry transport failures; never read timeouts or HTTP errors | pingora retry classification |
+| `now_or_never()` is reliable | Cooperative scheduling budget can lie; wrap in `unconstrained` | pingora + tokio |
+| `skip: bool` for security bypass | Graduated escape hatch: `.dangerous().skip_policy()` | rustls `.dangerous()` pattern |
+| Composable middleware is always right | Lifecycle callbacks win when ordering invariants exist and scale matters | pingora 40M req/s vs tower composition |
 
 ---
 
@@ -121,6 +129,37 @@ examples and traceability.
 
 ---
 
+## Reverse Proxy Patterns (geist-edge)
+
+Patterns for building the axum reverse proxy. These are the non-obvious decisions
+Claude gets wrong when assembling a proxy from hyper + axum + tower.
+
+| Decision | Wrong Default | Correct Pattern | Evidence |
+|----------|--------------|-----------------|----------|
+| Connection pooling | New TCP per request | `hyper_util::client::legacy::Client` with default pool | 1.8x latency overhead measured |
+| Hop-by-hop headers | Forward all headers | Strip 8 hop-by-hop headers on both request AND response | RFC 7230 Section 6.1 |
+| Host header | Forward client's Host | Rewrite to upstream authority (Host is spoofable) | axum Issue #2998 |
+| State sharing | Mutex-guarded state | `Arc<AppState>` with `&self` Client (hyper school) | hyper PR #3607 |
+| Body handling | Buffer everything | Stream-through for headers-only; buffer only when body processing opted in | hyper channel(0) backpressure |
+| Error mapping | Generic 500 | 502 (connection refused), 504 (timeout), forward upstream 5xx | axum Insight 5 (errors ARE responses) |
+| Timeout provenance | Silent retry | Default timeouts warn, explicit timeouts fail loudly | hyper Insight 19 |
+| Mutation ordering | Arbitrary | Set headers first, then remove; processor registration order | ext_proc specification |
+| Shutdown | Drop-based cleanup | CancellationToken (mem::forget is safe, Drop is unsound in async) | tokio Insight 15 |
+| Retry strategy | Retry all errors | Retry transport failures ONLY (connect refused, REFUSED_STREAM); never retry read timeouts | pingora retry classification |
+| H1/H2 body handling | Treat as equivalent | H2 body pipe is unbounded; writing 0 bytes finishes H1 stream but is noop for H2 | pingora H1/H2 asymmetry |
+| `now_or_never()` | Reliably detects ready | Cooperative scheduling budget can return None on ready futures; wrap in `unconstrained` | tokio + pingora |
+| Policy bypass | `skip_policy: bool` | Graduated escape hatch — `.dangerous().skip_policy()` with visible naming | rustls `.dangerous()` pattern |
+| Connection limits | Trust connections are finite | Track request count per connection; GOAWAY at soft limit, close at hard limit | rustls sequence limits |
+
+**For the adapter**: the handler is a catch-all `fallback()`. `State(AppState)` extracts via
+`FromRequestParts` (no body consumption). The pipeline is `Arc<Sequence>` shared across
+concurrent requests.
+
+See [proxy-patterns.md](references/proxy-patterns.md) for M1 implementation patterns with code.
+See [production-proxy-patterns.md](references/production-proxy-patterns.md) for production proxy engineering (pingora, retry, H1/H2, DoS protection).
+
+---
+
 ## Gateway Design Tensions (x.uma)
 
 x.uma must resolve a specific tension between tower and hyper:
@@ -142,6 +181,41 @@ Other non-obvious gateway patterns:
 - `BoxedIntoRoute` trades type complexity for compile time
 
 See [middleware-gateway.md](references/middleware-gateway.md) for tower + axum + hyper synthesis.
+
+---
+
+## Tauri Embedding (geist-shell)
+
+Patterns for embedding geist-edge inside a Tauri v2 desktop app. The key insight:
+geist-edge is a library (not a sidecar), so the axum server runs in the same tokio
+runtime as Tauri's async commands.
+
+| Decision | Wrong Default | Correct Pattern | Evidence |
+|----------|--------------|-----------------|----------|
+| Edge as subprocess | Sidecar process management | Embed as library, share tokio runtime | Tauri async commands run on tokio |
+| IPC sizing | One transport for all | <8KB direct JS exec, large via fetch queue | Tauri measured 2x (insight #13) |
+| Plugin state | Global mutable state | `app.manage(T)` with `State<T>` injection | Tauri PR #14668 removed globals |
+| Channel lifecycle | Fire-and-forget | Two-sided: Rust Drop sends `{ end: true }` to JS | Tauri channel.rs |
+| Main thread | Assume all work is async | macOS requires UI work on main thread (NSApp) | Tauri RunEvent::ExitRequested |
+| Webview constants | Reuse Tauri's thresholds | Measure for YOUR webview engine | Platform-specific (WKWebView vs WebView2) |
+
+**Embedding pattern**: Tauri `setup()` hook spawns axum server on a background tokio task.
+The `AppState` holds `Arc<Sequence>` (processor pipeline) and `Arc<Client>` (upstream pool).
+Tauri IPC commands (`#[tauri::command]`) call into the same pipeline for management operations
+(compose, launch, stop). Agent subprocess inherits `ANTHROPIC_BASE_URL=http://localhost:{port}`.
+
+**What transfers from Tauri's own architecture:**
+- Plugin namespace isolation (`plugin:<name>|<command>`) → agent capability namespacing
+- Deny-first ACL with `denied_commands` before `allowed_commands`
+- Size-based IPC routing (measure, don't guess)
+- Channel Drop protocol for cross-boundary resource cleanup
+
+**What doesn't transfer:**
+- Compile-time config embedding (agents need runtime policy updates)
+- Single-binary distribution (Rust + Python + eBPF components)
+
+See [desktop-shell-patterns.md](references/desktop-shell-patterns.md) for full Tauri
+architecture patterns.
 
 ---
 
@@ -213,8 +287,10 @@ made, measured, and reversed.
 
 ## References
 
-### From 20 mined codebases (424 insights)
+### From 20 mined codebases (424 insights, 9 references)
 
+- [proxy-patterns.md](references/proxy-patterns.md) — axum reverse proxy patterns for geist-edge adapter (M1)
+- [production-proxy-patterns.md](references/production-proxy-patterns.md) — pingora, retry, H1/H2, DoS protection, zero-copy, verification markers
 - [security-architecture.md](references/security-architecture.md) — rustls + tauri + aya security patterns
 - [middleware-gateway.md](references/middleware-gateway.md) — tower + axum + hyper for x.uma
 - [ffi-bridging.md](references/ffi-bridging.md) — uniffi-rs + tokio + bytes for geist-shell boundary
