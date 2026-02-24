@@ -9,6 +9,16 @@
 //! - **Compositors** orchestrate processors (Sequence for linear pipelines)
 //! - **Adapters** bridge runtime natives ↔ ext_proc types (axum, pingora)
 //!
+//! # Writing an Extension
+//!
+//! 1. Implement [`Processor`](processor::Processor) — `name()` + phase methods
+//!    (wrap async blocks with `Box::pin(async move { Ok(PhaseResult::Continue) })`)
+//! 2. Implement [`IntoProcessor`](registry::IntoProcessor) — `Config` type + `from_config()`
+//! 3. Call [`register_processor!`] — one line, handles deserialization + registration
+//! 4. Add a [`TypedConfig`](registry::TypedConfig) entry in pipeline JSON config
+//!
+//! See the [`registry`] module for the full pattern and examples.
+//!
 //! # Policy-Processor Model
 //!
 //! Policies define WHAT (user config). Processors define HOW (enforcement).
