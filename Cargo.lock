@@ -321,18 +321,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "geist"
-version = "0.0.1"
-dependencies = [
- "geist-acl",
- "geist-edge",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "geist-acl"
 version = "0.0.1"
 dependencies = [
@@ -360,6 +348,18 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+]
+
+[[package]]
+name = "geist-sh"
+version = "0.0.1"
+dependencies = [
+ "geist-acl",
+ "geist-edge",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
