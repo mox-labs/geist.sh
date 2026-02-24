@@ -429,6 +429,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "geist-access-control"
+version = "0.0.1"
+dependencies = [
+ "geist-edge",
+ "inventory",
+ "rumi-core",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "geist-edge"
 version = "0.0.1"
 dependencies = [

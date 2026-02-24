@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["geist/edge", "geist/bin"]
+members = ["geist/edge", "geist/access-control", "geist/bin"]
 
 [workspace.package]
 version = "0.0.1"
@@ -12,6 +12,7 @@ authors = ["Yashodeep Vyas"]
 [workspace.dependencies]
 # Internal
 geist-edge = { path = "geist/edge" }
+geist-access-control = { path = "geist/access-control" }
 
 # Core (path deps on x.uma — package key needed: lib=rumi, package=rumi-core)
 rumi = { path = "../x.uma/rumi/core", package = "rumi-core", features = ["serde"] }
