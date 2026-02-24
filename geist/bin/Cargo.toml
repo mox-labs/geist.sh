@@ -12,9 +12,12 @@ name = "geist"
 path = "src/main.rs"
 
 [dependencies]
-geist-edge = { workspace = true, features = ["adapter-axum"] }
+geist-edge = { workspace = true }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 serde_json.workspace = true
-clap = { version = "4", features = ["derive"] }
+
+# Extension crates — linked here so inventory collects their registrations.
+# The binary is the composition root: it names what it composes.
+geist-access-control.workspace = true
