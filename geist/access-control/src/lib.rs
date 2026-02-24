@@ -27,5 +27,4 @@ mod evaluator;
 mod processor;
 
 pub use config::{AccessControlPolicy, AgentOpMatch, AllowRule, DenyRule};
-pub use evaluator::PolicyEvaluator;
 pub use processor::AccessControlProcessor;
