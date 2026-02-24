@@ -17,6 +17,9 @@ geist-edge = { path = "geist/edge" }
 rumi = { path = "../x.uma/rumi/core", package = "rumi-core", features = ["serde"] }
 rumi-http = { path = "../x.uma/rumi/ext/http" }
 
+# Extension registration
+inventory = "0.3"
+
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
