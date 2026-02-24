@@ -1,13 +1,12 @@
 //! geist — composition root for the governed runtime.
 //!
-//! Wires extension crates into the processor registry, builds the pipeline
-//! from config, and (future) starts the adapter.
+//! Links extension crates so `inventory` collects their self-registrations.
+//! Extensions register themselves — core never knows they exist.
 
 use geist_edge::prelude::*;
 
-// Link extension crates so inventory collects their registrations.
-// The `use` ensures the linker doesn't dead-strip the crate.
-use geist_access_control as _;
+// Link extension crates so inventory collects their self-registrations.
+use geist_acl as _;
 
 fn main() {
     tracing_subscriber::fmt()
@@ -17,7 +16,7 @@ fn main() {
         )
         .init();
 
-    // Build registry from all self-registered extensions.
+    // Build registry — collect_extensions() picks up everything linked.
     let registry = ProcessorRegistryBuilder::new()
         .collect_extensions()
         .build();
@@ -31,6 +30,6 @@ fn main() {
         tracing::info!(type_url = url, "registered");
     }
 
-    // TODO(P2): load pipeline config from file/env, create pipeline, start adapter.
+    // TODO(P2): load pipeline config, create pipeline, start adapter.
     tracing::info!("geist: registry ready, adapter not yet implemented");
 }

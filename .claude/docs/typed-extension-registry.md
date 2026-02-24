@@ -121,14 +121,14 @@ Two registration paths:
 
 ## Extension Contributor Experience
 
-### Writing a processor extension (geist-access-control example)
+### Writing a processor extension (geist-acl example)
 
 An extension crate depends on `geist-edge` and provides three things:
 
 **1. The processor** — implements `Processor` trait:
 
 ```rust
-// geist-access-control/src/processor.rs (behind `processor` feature gate)
+// geist-acl/src/processor.rs (behind `processor` feature gate)
 pub struct AccessControlProcessor {
     evaluator: PolicyEvaluator,  // compiled rumi matchers
 }
@@ -149,7 +149,7 @@ impl Processor for AccessControlProcessor {
 **2. The factory** — implements `IntoProcessor`:
 
 ```rust
-// geist-access-control/src/processor.rs
+// geist-acl/src/processor.rs
 impl IntoProcessor for AccessControlProcessor {
     type Config = AccessControlPolicy;  // deny rules + allow rules
 
@@ -164,7 +164,7 @@ impl IntoProcessor for AccessControlProcessor {
 **3. Self-registration** — `inventory::submit!`:
 
 ```rust
-// geist-access-control/src/processor.rs
+// geist-acl/src/processor.rs
 inventory::submit! {
     ProcessorRegistration {
         type_url: "mox.geist.processors.v1.AccessControl",
@@ -191,7 +191,7 @@ serde_json = "1"
 ### Extension crate structure
 
 ```
-geist-access-control/
+geist-acl/
 ├── src/
 │   ├── lib.rs          ← pub mod + inventory::submit!
 │   ├── processor.rs    ← AccessControlProcessor: impl Processor + impl IntoProcessor
@@ -259,7 +259,7 @@ Each entry is a `TypedConfig { type_url, config }` — same shape as Envoy's `Ty
 
 **Safety**: `inventory` runs constructors at load time (before `main()`). The constructors only append to a global linked list — no complex initialization, no ordering dependencies. The pattern is identical to Envoy's `REGISTER_FACTORY` (C++ static global constructors).
 
-**Cross-crate**: Works correctly across crate boundaries. An `inventory::submit!` in `geist-access-control` is collected by `inventory::iter` in `geist-bin`, as long as `geist-access-control` is a dependency (direct or transitive).
+**Cross-crate**: Works correctly across crate boundaries. An `inventory::submit!` in `geist-acl` is collected by `inventory::iter` in `geist-bin`, as long as `geist-acl` is a dependency (direct or transitive).
 
 ## The Two-Level Lifecycle
 

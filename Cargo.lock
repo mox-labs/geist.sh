@@ -324,7 +324,7 @@ dependencies = [
 name = "geist"
 version = "0.0.1"
 dependencies = [
- "geist-access-control",
+ "geist-acl",
  "geist-edge",
  "serde_json",
  "tokio",
@@ -333,7 +333,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "geist-access-control"
+name = "geist-acl"
 version = "0.0.1"
 dependencies = [
  "geist-edge",
