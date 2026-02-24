@@ -1,5 +1,5 @@
 [package]
-name = "geist"
+name = "geist-sh"
 description = "geist.sh — governed runtime for autonomous agents"
 version.workspace = true
 edition.workspace = true
@@ -8,7 +8,7 @@ repository.workspace = true
 authors.workspace = true
 
 [[bin]]
-name = "geist"
+name = "geist-sh"
 path = "src/main.rs"
 
 [dependencies]
