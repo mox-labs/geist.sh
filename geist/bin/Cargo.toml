@@ -18,6 +18,5 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 serde_json.workspace = true
 
-# Extension crates — linked here so inventory collects their registrations.
-# The binary is the composition root: it names what it composes.
-geist-access-control.workspace = true
+# Extension crates — linked so inventory collects their self-registrations.
+geist-acl.workspace = true
