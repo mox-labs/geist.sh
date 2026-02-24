@@ -9,7 +9,7 @@ use crate::config::{AccessControlPolicy, AgentOpMatch};
 /// Compiles deny/allow rules into rumi matchers at construction time.
 /// Evaluation is O(rules * fields) with compiled matchers — no regex
 /// compilation per request.
-pub struct PolicyEvaluator {
+pub(crate) struct PolicyEvaluator {
     deny_rules: Vec<CompiledDenyRule>,
     allow_rules: Vec<CompiledAllowRule>,
 }
@@ -34,24 +34,18 @@ struct CompiledMatch {
 
 /// Result of policy evaluation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PolicyDecision {
+pub(crate) enum PolicyDecision {
     Allow,
     Deny { reason: String },
 }
 
-impl PolicyDecision {
-    pub fn is_allowed(&self) -> bool {
-        matches!(self, PolicyDecision::Allow)
-    }
-}
-
 /// Agent operation context extracted from request headers.
-pub struct AgentOp<'a> {
-    pub agent_id: &'a str,
-    pub tool_name: &'a str,
-    pub resource: &'a str,
-    pub operation: &'a str,
-    pub session_id: &'a str,
+pub(crate) struct AgentOp<'a> {
+    pub(crate) agent_id: &'a str,
+    pub(crate) tool_name: &'a str,
+    pub(crate) resource: &'a str,
+    pub(crate) operation: &'a str,
+    pub(crate) session_id: &'a str,
 }
 
 impl PolicyEvaluator {
