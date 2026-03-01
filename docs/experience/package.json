@@ -14,13 +14,18 @@
 	"dependencies": {
 		"@content-collections/core": "^0.13.1",
 		"@content-collections/vite": "^0.2.8",
+		"@threlte/core": "^8.4.0",
+		"@threlte/extras": "^9.8.1",
+		"postprocessing": "^6.38.3",
 		"svelte-exmarkdown": "^5.0.2",
+		"three": "^0.183.1",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.2.6",
 		"@sveltejs/kit": "^2.50.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@types/three": "^0.183.1",
 		"svelte": "^5.48.2",
 		"svelte-check": "^4.3.5",
 		"typescript": "^5.9.3",

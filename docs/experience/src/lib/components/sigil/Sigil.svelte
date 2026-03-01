@@ -74,7 +74,7 @@
 		return p > 0 && p < 1 ? Math.sin(p * Math.PI) : 0;
 	})());
 
-	let heptRot = $derived(booting ? 0 : (runTime * 0.008) % 360);
+	let heptRot = $derived(booting ? 0 : -(runTime * 0.008) % 360);
 </script>
 
 <svg

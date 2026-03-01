@@ -66,6 +66,8 @@
 	.shell {
 		display: flex;
 		min-height: 100vh;
+		position: relative;
+		z-index: 1;
 	}
 
 	.sidebar {
@@ -73,7 +75,7 @@
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
-		background: var(--hud-bg-surface);
+		background: rgba(8, 12, 20, 0.92);
 		border-right: 1px solid var(--hud-border-subtle);
 		padding: var(--hud-sidebar-padding-y) 0;
 	}
@@ -158,6 +160,7 @@
 		min-width: 0;
 		display: flex;
 		flex-direction: column;
+		background: rgba(8, 12, 20, 0.85);
 	}
 
 	.mobile-toggle {

@@ -1,15 +1,11 @@
 <script lang="ts">
 	import Sigil from '$lib/components/sigil/Sigil.svelte';
 	import GeistCenter from '$lib/components/sigil/GeistCenter.svelte';
-
 </script>
 
 <div class="landing">
 	<!-- ═══ HERO ═══ -->
 	<section class="hero">
-		<div class="hero-grid" aria-hidden="true"></div>
-		<div class="hero-glow" aria-hidden="true"></div>
-
 		<div class="sigil-container">
 			<Sigil size={650}>
 				{#snippet center({ time })}
@@ -106,6 +102,8 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		position: relative;
+		z-index: 1;
 	}
 
 	/* ── Hero ─────────────────────────────────────────────── */
@@ -122,25 +120,6 @@
 		overflow: hidden;
 	}
 
-	.hero-grid {
-		position: absolute;
-		inset: 0;
-		background-image: linear-gradient(rgba(0, 255, 65, 0.018) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(0, 255, 65, 0.018) 1px, transparent 1px);
-		background-size: 40px 40px;
-		mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
-		-webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
-	}
-
-	.hero-glow {
-		position: absolute;
-		width: 500px;
-		height: 500px;
-		border-radius: 50%;
-		background: radial-gradient(circle, rgba(0, 255, 65, 0.06) 0%, transparent 70%);
-		pointer-events: none;
-	}
-
 	.sigil-container {
 		position: relative;
 		z-index: 1;
@@ -155,7 +134,7 @@
 		font-weight: var(--hud-weight-normal);
 		color: var(--hud-accent);
 		letter-spacing: 0.12em;
-		text-shadow: 0 0 30px rgba(0, 255, 65, 0.4);
+		text-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
 		animation: fade-in 1s ease-out 0.3s both;
 	}
 
@@ -258,7 +237,7 @@
 
 	.accent {
 		color: var(--hud-accent);
-		text-shadow: 0 0 12px rgba(0, 255, 65, 0.3);
+		text-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
 	}
 
 	.eq-gloss {
@@ -359,7 +338,7 @@
 		background: var(--hud-bg-hover);
 		border-color: var(--hud-accent);
 		text-decoration: none;
-		text-shadow: 0 0 8px rgba(0, 255, 65, 0.3);
+		text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 	}
 
 	.status-line {

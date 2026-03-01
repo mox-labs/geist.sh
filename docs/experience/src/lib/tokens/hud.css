@@ -1,60 +1,59 @@
 /* ==========================================================================
    GESTALT HUD TOKENS
-   Policy enforcement for autonomous agents.
+   Ghost in the Shell — net-dive aesthetic.
 
-   Phosphor green on void black. Information as signal.
-   Adapted from blueprints HUD — scoped to :root (the whole site is the terminal).
+   Cool silver on deep navy. Light emerging from depth.
+   Scoped to :root (the whole site is the interface).
    ========================================================================== */
 
 :root {
 
   /* -------------------------------------------------------------------
      BACKGROUNDS
-     Four-layer depth stack. Each layer is a subtle step lighter.
-     The eye reads depth from luminance difference, not from shadows.
+     Deep water depth stack. Deep navy, not black.
+     Light emerges from depth, not projected from surface.
      ------------------------------------------------------------------- */
 
-  --hud-bg-void:     #000000;
-  --hud-bg-surface:  #040a04;
-  --hud-bg-raised:   #081008;
-  --hud-bg-overlay:  #0c140c;
+  --hud-bg-void:     #080c14;
+  --hud-bg-surface:  #0c1220;
+  --hud-bg-raised:   #111828;
+  --hud-bg-overlay:  #161e30;
 
-  --hud-bg-hover:    #0a1a0a;
-  --hud-bg-active:   #0e200e;
-  --hud-bg-input:    #020602;
+  --hud-bg-hover:    #1a2338;
+  --hud-bg-active:   #1e2840;
+  --hud-bg-input:    #0a0e18;
 
   /* -------------------------------------------------------------------
      BORDERS
-     Structural, not decorative. Every line earns its place.
+     Barely there — structure through absence.
      ------------------------------------------------------------------- */
 
-  --hud-border-subtle:  #0a1a0a;
-  --hud-border:         #0f2a0f;
-  --hud-border-strong:  #1a3a1a;
+  --hud-border-subtle:  #1a2338;
+  --hud-border:         #243048;
+  --hud-border-strong:  #2e3c58;
 
   /* -------------------------------------------------------------------
      TEXT
-     JetBrains Mono throughout. Hierarchy through luminance.
+     JetBrains Mono throughout. Cool silver hierarchy.
      ------------------------------------------------------------------- */
 
-  --hud-text:           #b0ffb0;
-  --hud-text-secondary: #70b870;
-  --hud-text-muted:     #4a8a4a;
-  --hud-text-faint:     #2a5a2a;
+  --hud-text:           #e0e8f0;
+  --hud-text-secondary: #a0b0c8;
+  --hud-text-muted:     #6880a0;
+  --hud-text-faint:     #3c5070;
 
   /* -------------------------------------------------------------------
      SEMANTIC COLORS
-     Color is signal, not decoration. Grayscale by default.
-     Color appears only to communicate state.
+     Bioluminescent accents. Soft, not neon.
      ------------------------------------------------------------------- */
 
-  --hud-green:        #00FF41;
-  --hud-green-soft:   rgba(0, 255, 65, 0.08);
-  --hud-green-border: rgba(0, 255, 65, 0.30);
+  --hud-cyan:        #00d4ff;
+  --hud-cyan-soft:   rgba(0, 212, 255, 0.08);
+  --hud-cyan-border: rgba(0, 212, 255, 0.30);
 
-  --hud-amber:        #c89660;
-  --hud-amber-soft:   rgba(200, 150, 96, 0.10);
-  --hud-amber-border: rgba(200, 150, 96, 0.40);
+  --hud-amber:        #c8a060;
+  --hud-amber-soft:   rgba(200, 160, 96, 0.10);
+  --hud-amber-border: rgba(200, 160, 96, 0.40);
 
   --hud-red:          #d45555;
   --hud-red-soft:     rgba(212, 85, 85, 0.10);
@@ -64,13 +63,18 @@
   --hud-blue-soft:    rgba(91, 138, 240, 0.10);
   --hud-blue-border:  rgba(91, 138, 240, 0.40);
 
+  /* Legacy alias — components referencing --hud-green now get cyan */
+  --hud-green:        var(--hud-cyan);
+  --hud-green-soft:   var(--hud-cyan-soft);
+  --hud-green-border: var(--hud-cyan-border);
+
   /* -------------------------------------------------------------------
      ROLE ALIASES
      ------------------------------------------------------------------- */
 
-  --hud-accent:         var(--hud-green);
-  --hud-accent-soft:    var(--hud-green-soft);
-  --hud-accent-border:  var(--hud-green-border);
+  --hud-accent:         var(--hud-cyan);
+  --hud-accent-soft:    var(--hud-cyan-soft);
+  --hud-accent-border:  var(--hud-cyan-border);
 
   --hud-status-active:  var(--hud-green);
   --hud-status-draft:   var(--hud-amber);

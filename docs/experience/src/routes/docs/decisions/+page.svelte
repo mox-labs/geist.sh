@@ -6,6 +6,10 @@
 	);
 </script>
 
+<svelte:head>
+	<title>gestalt | decisions</title>
+</svelte:head>
+
 <div class="decisions-index">
 	<h1 class="page-title">Architecture Decision Records</h1>
 	<p class="page-description">Key technical decisions and their rationale.</p>
