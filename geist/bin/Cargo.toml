@@ -12,7 +12,7 @@ name = "geist-sh"
 path = "src/main.rs"
 
 [dependencies]
-geist-edge = { workspace = true }
+geist-edge = { workspace = true, features = ["adapter-axum"] }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
@@ -20,3 +20,4 @@ serde_json.workspace = true
 
 # Extension crates — linked so inventory collects their self-registrations.
 geist-acl.workspace = true
+geist-log.workspace = true

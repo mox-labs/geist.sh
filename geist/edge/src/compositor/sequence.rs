@@ -248,6 +248,18 @@ impl SequenceBuilder {
         self
     }
 
+    /// Add multiple processors to the pipeline.
+    ///
+    /// Connects [`ProcessorRegistry::create_pipeline()`] output directly:
+    /// ```ignore
+    /// let pipeline = registry.create_pipeline(&config.pipeline)?;
+    /// let sequence = Sequence::builder().processors(pipeline).build();
+    /// ```
+    pub fn processors(mut self, procs: Vec<Arc<dyn Processor>>) -> Self {
+        self.processors.extend(procs);
+        self
+    }
+
     /// Set the failure mode for the pipeline.
     pub fn failure_mode(mut self, mode: FailureMode) -> Self {
         self.failure_mode = mode;

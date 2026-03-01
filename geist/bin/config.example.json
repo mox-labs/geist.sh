@@ -1,0 +1,23 @@
+{
+  "listen": "127.0.0.1:3000",
+  "upstream": "http://127.0.0.1:8080",
+  "failure_mode": "fail_closed",
+  "pipeline": [
+    {
+      "type_url": "mox.geist.processors.v1.AccessControl",
+      "config": {
+        "deny": [
+          {
+            "reason": "Bash tool is restricted",
+            "matches": [{ "tool_name": { "Exact": "Bash" } }]
+          }
+        ],
+        "allow": [
+          {
+            "matches": [{ "agent_id": { "Exact": "claude-main" } }]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -33,7 +33,7 @@ Tauri (geist-shell)
 - Pipeline config is a list of `TypedConfig { type_url, config }` entries
 - Each processor owns its policy type — no generic PolicyEvaluator
 - Registry is immutable after build (builder pattern → frozen registry)
-- Extension crates self-register via `inventory::submit!` — zero code changes to core or binary
+- Extension crates self-register via `inventory::submit!` — zero code changes to core. Binary composition root needs: Cargo dep + `use crate as _;` (linking only, no logic changes)
 
 **ACES** (Adaptable, Composable, Extensible Software) is the architectural quality:
 - **Adaptable**: swap adapter (axum → pingora → ext_proc) without touching processors
@@ -63,17 +63,19 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 | `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, adapters |
 | `geist-sh` | `geist/bin` | Binary — composition root, links extensions, starts adapter + agent runtime |
 | `geist-acl` | `geist/acl` | Access control processor extension (P1.5) |
+| `geist-log` | `geist/log` | Access logging processor extension — async via `tracing-appender::NonBlocking` |
 
 ## Key Documents
 
 1. `.claude/docs/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
 2. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
 3. `.claude/docs/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
-4. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
-5. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
-6. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
-7. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
-8. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
+4. `.claude/docs/benchmark-architecture.md` — **Benchmark: geist-edge vs SCG vs Envoy.** Thesis, matrix, per-variant architecture, load profile, directory layout, running instructions.
+5. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
+6. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
+7. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
+8. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
+9. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
 
 ### Blueprint Sources (External)
 

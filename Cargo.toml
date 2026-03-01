@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["geist/edge", "geist/acl", "geist/bin"]
+members = ["geist/edge", "geist/acl", "geist/log", "geist/bin"]
 
 [workspace.package]
 version = "0.0.1"
@@ -13,6 +13,7 @@ authors = ["Yashodeep Vyas"]
 # Internal
 geist-edge = { path = "geist/edge" }
 geist-acl = { path = "geist/acl" }
+geist-log = { path = "geist/log" }
 
 # Core (path deps on x.uma — package key needed: lib=rumi, package=rumi-core)
 rumi = { path = "../x.uma/rumi/core", package = "rumi-core", features = ["serde"] }
@@ -27,6 +28,10 @@ serde_json = "1"
 
 # Async
 tokio = { version = "1", features = ["full"] }
+
+# HTTP (adapter deps)
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
 
 # Observability
 tracing = "0.1"

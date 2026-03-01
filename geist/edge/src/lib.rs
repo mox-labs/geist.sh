@@ -29,6 +29,9 @@ pub mod phase;
 pub mod processor;
 pub mod registry;
 
+#[cfg(feature = "adapter-axum")]
+pub mod adapter;
+
 /// Prelude for convenient imports.
 pub mod prelude {
     pub use crate::compositor::{FailureMode, Sequence, SequenceBuilder, SequenceOutcome};
