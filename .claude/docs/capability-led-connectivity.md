@@ -109,10 +109,13 @@ The **Capability Router** is the boundary between downstream and upstream. It se
 | Pipeline compositor | `struct Sequence` (linear, ordered execution) | `geist/edge/src/compositor/sequence.rs` |
 | Pipeline outcome | `enum SequenceOutcome` (Continue, Respond, Error) | `geist/edge/src/compositor/sequence.rs` |
 | Failure handling | `enum FailureMode` (FailClosed, FailOpen) | `geist/edge/src/compositor/sequence.rs` |
-| Extension factory | `trait IntoProcessor` (associated `Config` type) | `.claude/docs/typed-extension-registry.md` (design) |
-| Extension registry | `ProcessorRegistryBuilder` → `ProcessorRegistry` | `.claude/docs/typed-extension-registry.md` (design) |
+| Extension factory | `trait IntoProcessor` (associated `Config` type) | `geist/edge/src/registry.rs` |
+| Extension registry | `ProcessorRegistryBuilder` → `ProcessorRegistry` | `geist/edge/src/registry.rs` |
+| Self-registration | `register_processor!` macro + `ProcessorRegistration` | `geist/edge/src/registry.rs` |
+| Pipeline config | `TypedConfig { type_url, config }` | `geist/edge/src/registry.rs` |
+| Access control | `AccessControlProcessor` (deny-first, rumi matchers) | `geist/acl/src/processor.rs` |
 
-The Capability Router and upstream/downstream split are Phase 6+ (enterprise). Current implementation uses a single Sequence for the full pipeline.
+The Capability Router and upstream/downstream split are Phase 6+ (enterprise). Current implementation uses a single Sequence compositor for the full pipeline. The compositor abstraction can support multiple topologies (Sequence, Graph/DAG) — Sequence is the first, covering linear pipeline needs.
 
 ### Phase Model
 
