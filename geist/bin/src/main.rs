@@ -1,12 +1,9 @@
 //! geist — composition root for the governed runtime.
 //!
-//! Links extension crates so `inventory` collects their self-registrations.
-//! Extensions register themselves — core never knows they exist.
+//! Processors are built into geist-edge. Extensions register themselves
+//! via `inventory::submit!` — core never knows they exist.
 
 use geist_edge::prelude::*;
-
-// Link extension crates so inventory collects their self-registrations.
-use geist_acl as _;
 
 fn main() {
     tracing_subscriber::fmt()

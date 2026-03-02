@@ -1,11 +1,33 @@
-//! Access control processor — bridges geist-edge pipeline with policy evaluator.
+//! Access control processor — deny-first evaluation.
+//!
+//! Enforces access control policies on inbound requests.
+//! Configured with [`AccessControlPolicy`] — deny rules checked first,
+//! then allow rules, then default deny.
+//!
+//! # Type URL
+//!
+//! `mox.geist.processors.v1.AccessControl`
+
+mod config;
+mod evaluator;
 
 use std::sync::Arc;
 
-use geist_edge::prelude::*;
+use crate::phase::PhaseResult;
+use crate::processor::{BoxFuture, Processor, ProcessorError};
+use crate::registry::IntoProcessor;
 
-use crate::config::AccessControlPolicy;
-use crate::evaluator::{AgentOp, PolicyDecision, PolicyEvaluator};
+use config::AccessControlPolicy;
+use evaluator::{AgentOp, PolicyDecision, PolicyEvaluator};
+
+pub use config::{AccessControlPolicy as Policy, AgentOpMatch, AllowRule, DenyRule};
+
+use rumi_http::HttpMessage;
+
+use envoy_grpc_ext_proc::envoy::{
+    r#type::v3::HttpStatus,
+    service::ext_proc::v3::ImmediateResponse,
+};
 
 /// Type URL for this processor extension.
 pub const TYPE_URL: &str = "mox.geist.processors.v1.AccessControl";
@@ -79,13 +101,16 @@ impl IntoProcessor for AccessControlProcessor {
     }
 }
 
-// Self-registration — zero code changes to core or binary.
-geist_edge::register_processor!(TYPE_URL, AccessControlProcessor);
+// Self-registration via inventory.
+crate::register_processor!(TYPE_URL, AccessControlProcessor);
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{AgentOpMatch, AllowRule, DenyRule};
+    use envoy_grpc_ext_proc::envoy::{
+        config::core::v3::{HeaderMap, HeaderValue},
+        service::ext_proc::v3::{processing_request::Request, HttpHeaders, ProcessingRequest},
+    };
 
     fn make_request(headers: Vec<(&str, &str)>) -> HttpMessage {
         let header_values: Vec<HeaderValue> = headers
