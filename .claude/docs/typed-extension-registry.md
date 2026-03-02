@@ -57,11 +57,12 @@ inventory::collect!(ProcessorRegistration);
 ### ProcessorRegistry — immutable after build
 
 ```rust
-type BoxedProcessorFactory =
+// Type-erased factory stored in the registry.
+type BoxedFactory =
     Box<dyn Fn(&serde_json::Value) -> Result<Arc<dyn Processor>, ProcessorError> + Send + Sync>;
 
 pub struct ProcessorRegistryBuilder {
-    factories: HashMap<String, BoxedProcessorFactory>,
+    factories: HashMap<String, BoxedFactory>,
 }
 
 impl ProcessorRegistryBuilder {
@@ -69,9 +70,18 @@ impl ProcessorRegistryBuilder {
 
     /// Collect all extensions registered via `inventory::submit!`.
     /// Call once in the composition root. Never changes.
+    ///
+    /// Panics on duplicate type URL — silent override would be
+    /// non-deterministic (platform-specific static init ordering).
     #[must_use]
     pub fn collect_extensions(mut self) -> Self {
         for reg in inventory::iter::<ProcessorRegistration> {
+            if self.factories.contains_key(reg.type_url) {
+                panic!(
+                    "duplicate processor type URL '{}' — two extensions claim the same type URL.",
+                    reg.type_url
+                );
+            }
             self.factories.insert(
                 reg.type_url.to_owned(),
                 Box::new(reg.factory),
@@ -81,12 +91,19 @@ impl ProcessorRegistryBuilder {
     }
 
     /// Register a processor factory explicitly (for tests or one-offs).
+    /// Monomorphizes T::Config deserialization into a type-erased closure.
     #[must_use]
     pub fn with<T: IntoProcessor>(mut self, type_url: &str) -> Self {
+        let url = type_url.to_owned();
+        let url_for_closure = url.clone();
         self.factories.insert(
-            type_url.to_owned(),
-            Box::new(|value: &serde_json::Value| {
-                let config: T::Config = serde_json::from_value(value.clone())?;
+            url,
+            Box::new(move |value: &serde_json::Value| {
+                let config: T::Config = serde_json::from_value(value.clone())
+                    .map_err(|e| ProcessorError::new(
+                        &url_for_closure,
+                        format!("config deserialization failed: {e}"),
+                    ))?;
                 T::from_config(config)
             }),
         );
@@ -97,7 +114,7 @@ impl ProcessorRegistryBuilder {
 }
 
 pub struct ProcessorRegistry {
-    factories: HashMap<String, BoxedProcessorFactory>,
+    factories: HashMap<String, BoxedFactory>,
 }
 
 impl ProcessorRegistry {
@@ -107,11 +124,25 @@ impl ProcessorRegistry {
         config: &serde_json::Value,
     ) -> Result<Arc<dyn Processor>, ProcessorError> {
         let factory = self.factories.get(type_url)
-            .ok_or_else(|| ProcessorError::unknown_type_url(type_url, self.type_urls()))?;
+            .ok_or_else(|| ProcessorError::new(
+                type_url,
+                format!(
+                    "unknown type URL '{}'. registered: [{}]",
+                    type_url,
+                    self.type_urls().join(", ")
+                ),
+            ))?;
         factory(config)
     }
 
+    pub fn create_pipeline(
+        &self,
+        configs: &[TypedConfig],
+    ) -> Result<Vec<Arc<dyn Processor>>, ProcessorError> { ... }
+
     pub fn type_urls(&self) -> Vec<&str> { ... }
+    pub fn len(&self) -> usize { ... }
+    pub fn is_empty(&self) -> bool { ... }
 }
 ```
 
@@ -128,20 +159,24 @@ An extension crate depends on `geist-edge` and provides three things:
 **1. The processor** — implements `Processor` trait:
 
 ```rust
-// geist-acl/src/processor.rs (behind `processor` feature gate)
+// geist/acl/src/processor.rs
 pub struct AccessControlProcessor {
     evaluator: PolicyEvaluator,  // compiled rumi matchers
 }
 
 impl Processor for AccessControlProcessor {
-    fn processing_mode(&self) -> ProcessingMode { ProcessingMode::HEADERS_ONLY }
+    fn name(&self) -> &str { "access-control" }
 
-    fn on_request_headers<'a>(&'a self, msg: &'a HttpMessage) -> BoxFuture<'a, Result<PhaseResult, ProcessorError>> {
-        Box::pin(async move {
-            // extract agent context from x-geist-* headers
-            // evaluate deny/allow rules via compiled matchers
-            // return Continue, Mutate, or Respond(ImmediateResponse)
-        })
+    // mode() defaults to HEADERS_ONLY — no override needed
+
+    fn process_request_headers(
+        &self,
+        msg: &HttpMessage,
+    ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
+        // extract agent context from x-geist-* headers
+        // evaluate deny/allow rules via compiled matchers
+        // return Continue or Respond(ImmediateResponse { status: 403 })
+        Box::pin(async move { ... })
     }
 }
 ```
@@ -161,21 +196,16 @@ impl IntoProcessor for AccessControlProcessor {
 }
 ```
 
-**3. Self-registration** — `inventory::submit!`:
+**3. Self-registration** — via `register_processor!` macro:
 
 ```rust
-// geist-acl/src/processor.rs
-inventory::submit! {
-    ProcessorRegistration {
-        type_url: "mox.geist.processors.v1.AccessControl",
-        factory: |value| {
-            let config: AccessControlPolicy = serde_json::from_value(value.clone())
-                .map_err(|e| ProcessorError::new("access-control", e.to_string()))?;
-            AccessControlProcessor::from_config(config)
-        },
-    }
-}
+// geist/acl/src/processor.rs
+pub const TYPE_URL: &str = "mox.geist.processors.v1.AccessControl";
+
+geist_edge::register_processor!(TYPE_URL, AccessControlProcessor);
 ```
+
+The macro expands to `inventory::submit!` with correct deserialization and error wrapping — eliminates the boilerplate of manual registration.
 
 **Cargo.toml**:
 
@@ -191,12 +221,12 @@ serde_json = "1"
 ### Extension crate structure
 
 ```
-geist-acl/
+geist/acl/
 ├── src/
-│   ├── lib.rs          ← pub mod + inventory::submit!
-│   ├── processor.rs    ← AccessControlProcessor: impl Processor + impl IntoProcessor
-│   ├── config.rs       ← AccessControlPolicy (deny/allow rules)
-│   └── evaluator.rs    ← Compiled rumi matchers, deny-first evaluation
+│   ├── lib.rs          ← pub mod + pub use (re-exports config types)
+│   ├── processor.rs    ← AccessControlProcessor: impl Processor + impl IntoProcessor + register_processor!
+│   ├── config.rs       ← AccessControlPolicy, DenyRule, AllowRule, AgentOpMatch (serde + rumi StringMatchSpec)
+│   └── evaluator.rs    ← PolicyEvaluator: compiles policy → rumi matchers, deny-first evaluation
 └── Cargo.toml          ← depends on geist-edge, rumi, inventory
 ```
 
@@ -206,25 +236,28 @@ Same principle as Envoy: self-contained extension module. Everything in one crat
 
 ```rust
 // geist/bin/src/main.rs — this code is written once
+use geist_acl as _;  // link extension so inventory collects it
+
 let registry = ProcessorRegistryBuilder::new()
     .collect_extensions()  // gathers all inventory registrations
     .build();
 
-// Load pipeline from config file
-let processors: Vec<Arc<dyn Processor>> = config.processors.iter()
-    .map(|tc| registry.create(&tc.type_url, &tc.config))
-    .collect::<Result<_, _>>()?;
+// Load pipeline from config (TypedConfig entries)
+let processors = registry.create_pipeline(&config.processors)?;
 
-let sequence = SequenceBuilder::new()
-    .fail_closed()
-    .processors(processors)
+let sequence = Sequence::builder()
+    .failure_mode(FailureMode::FailClosed)
+    .processor(processors[0].clone())
+    .processor(processors[1].clone())
+    // ... or build from iterator
     .build();
 ```
 
 Adding `geist-auth`, `geist-ratelimit`, or any new extension:
 1. Add the crate as a dependency in `geist/bin/Cargo.toml`
-2. Add a `TypedConfig` entry in the pipeline config JSON
-3. **Zero code changes.** The `collect_extensions()` call picks it up automatically.
+2. Add `use new_crate as _;` to link it (so inventory picks up its registration)
+3. Add a `TypedConfig` entry in the pipeline config JSON
+4. **Zero code changes to the registry or builder.** The `collect_extensions()` call picks it up automatically.
 
 ## Pipeline Config (JSON)
 

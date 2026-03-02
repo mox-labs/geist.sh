@@ -1,0 +1,16 @@
+[package]
+name = "slick-types"
+description = "SLICK type system — typed registry + component manifest (CRD/xDS layering)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+manifest = []
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
