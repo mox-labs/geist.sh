@@ -2,32 +2,19 @@
 
 Semantic, LLM-Interpretable Component Kit.
 
-Generic typed extension registry + component manifest. Two type parameters (`T` for target instance, `E` for domain error), zero opinions about what you register.
+Map type URLs to factories, instantiate typed instances from JSON config. Two type parameters (`T` for target instance, `E` for domain error), zero opinions about what you register.
 
-## What's in the box
+```
+cargo add slickit
+```
 
-| Type | Role |
-|------|------|
-| `TypedConfig` | Config envelope: `{ type_url, config }`. Same shape as Envoy's `TypedExtensionConfig`. |
-| `TypedRegistryBuilder<T, E>` | Mutable builder. `register()`, `register_unique()`, `build()`. |
-| `TypedRegistry<T, E>` | Frozen registry. `create()`, `create_pipeline()`. Thread-safe, shareable via `Arc`. |
-| `RegistryError<E>` | `UnknownTypeUrl` or `Factory` error, with diagnostics. |
+## Runtime layer
 
-Behind the `manifest` feature flag:
-
-| Type | Role |
-|------|------|
-| `ComponentKind` | 4 kinds: Agent, Capability, Skill, Flow. |
-| `ComponentManifest` | Authoring-layer metadata: kind, type_url, description, contract, envelope. |
-| `ComponentContract` | What a component consumes and produces (for DAG composition). |
-| `BehavioralEnvelope` | Declared resource bounds and degradation modes. |
-
-## Usage
+Register factories by type URL, build a frozen registry, create instances from config.
 
 ```rust
 use slick::{TypedConfig, TypedRegistryBuilder};
 
-// 1. Build a registry — register factories by type URL
 let registry = TypedRegistryBuilder::<String, String>::new()
     .register("example.echo.v1", |value| {
         serde_json::from_value::<String>(value.clone())
@@ -35,35 +22,31 @@ let registry = TypedRegistryBuilder::<String, String>::new()
     })
     .build();
 
-// 2. Create instances from config
 let instance = registry
     .create("example.echo.v1", &serde_json::json!("hello"))
     .unwrap();
 assert_eq!(instance, "hello");
-
-// 3. Or create a whole pipeline from a config list
-let pipeline = registry.create_pipeline(&[
-    TypedConfig {
-        type_url: "example.echo.v1".into(),
-        config: serde_json::json!("first"),
-    },
-]).unwrap();
 ```
 
-### Domain-specific wrapping
+| Type | Role |
+|------|------|
+| `TypedConfig` | Config envelope: `{ type_url, config }` |
+| `TypedRegistryBuilder<T, E>` | Mutable builder. `register()`, `register_unique()`, `build()` |
+| `TypedRegistry<T, E>` | Frozen registry. `create()`, `create_pipeline()`. Thread-safe via `Arc` |
+| `RegistryError<E>` | `UnknownTypeUrl` or `Factory` error, with diagnostics |
+
+### Domain wrapping
 
 slick is generic. Domains wrap it with their own types:
 
 ```rust
 use std::sync::Arc;
-use slick::{TypedRegistryBuilder, TypedRegistry, RegistryError};
+use slick::{TypedRegistryBuilder, TypedRegistry};
 
-// Your domain trait
 trait Processor: Send + Sync {
     fn name(&self) -> &str;
 }
 
-// Your domain error
 struct ProcessorError { message: String }
 
 // Wrap the generic registry
@@ -72,9 +55,15 @@ struct ProcessorRegistry {
 }
 ```
 
-This is how [geist-edge](https://github.com/mox-labs/geist.sh) uses it — `ProcessorRegistryBuilder` wraps `TypedRegistryBuilder<Arc<dyn Processor>, ProcessorError>`, adds domain methods like `collect_extensions()` and `with::<T: IntoProcessor>()`, and flattens `RegistryError<ProcessorError>` into `ProcessorError` at the boundary.
+Add domain methods on the wrapper (`collect_extensions()`, `with::<T>()`), flatten `RegistryError<ProcessorError>` into your domain error at the boundary.
 
-### Manifests
+## Authoring layer
+
+Behind the `manifest` feature flag. Describes components at authoring time — what they are, what they consume/produce, declared resource bounds.
+
+```
+cargo add slickit --features manifest
+```
 
 ```rust
 use slick::manifest::*;
@@ -91,19 +80,21 @@ let manifest = ComponentManifest {
     },
     envelope: BehavioralEnvelope::default(),
 };
-
-// type_url bridges authoring → runtime
-let config = slick::TypedConfig {
-    type_url: "mox.geist.processors.v1.AccessControl".into(),
-    config: serde_json::json!({"deny": [], "allow": []}),
-};
-assert_eq!(manifest.type_url, config.type_url);
 ```
 
-## Two layers
+| Type | Role |
+|------|------|
+| `ComponentKind` | Agent, Capability, Skill, Flow |
+| `ComponentManifest` | Kind, type URL, description, contract, envelope |
+| `ComponentContract` | What a component consumes and produces (DAG composition) |
+| `BehavioralEnvelope` | Declared resource bounds and degradation modes |
+
+## Bridge
+
+`type_url` joins the two layers. Manifests describe, the registry instantiates.
 
 ```
-Authoring (manifest feature)     Runtime (default)
+Authoring (manifest)             Runtime (default)
 ─────────────────────────────    ──────────────────────────
 ComponentManifest                TypedConfig
   kind: ComponentKind              type_url ──────┐
@@ -115,17 +106,15 @@ ComponentManifest                TypedConfig
                                    → T instance
 ```
 
-`type_url` is the join key. Manifests describe components at authoring time. The registry instantiates them at runtime.
-
 ## Cross-surface
 
-Rust is canonical. Crusts compile the same types to other surfaces:
+Rust is canonical. Crusts (compiled bindings) expose the same types to Python and TypeScript:
 
-| Surface | Import | Crate | Build tool |
-|---------|--------|-------|------------|
+| Surface | Import | Package | Build |
+|---------|--------|---------|-------|
 | Rust | `use slick::` | `slickit` | cargo |
-| Python | `import slickpy` | `slickit/crusts/python` | maturin |
-| TypeScript | `import { ... } from 'slick'` | `slickit/crusts/wasm` | wasm-pack |
+| Python | `import slickpy` | `slickpy` | maturin |
+| TypeScript | `import { ... } from 'slick'` | `slick` | wasm-pack |
 
 ## Dependencies
 
