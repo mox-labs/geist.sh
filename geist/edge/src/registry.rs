@@ -18,24 +18,15 @@
 //! Config:           [{ "type_url": "mox.geist.processors.v1.Foo", "config": {...} }]
 //! ```
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
+use slick_types::RegistryError;
 
 use crate::processor::{Processor, ProcessorError};
 
-/// A typed config entry from pipeline configuration.
-///
-/// Same shape as Envoy's `TypedExtensionConfig`: a type URL that identifies
-/// the factory, and an opaque config blob deserialized by the factory.
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct TypedConfig {
-    /// Factory lookup key. Format: `mox.geist.processors.v1.{TypeName}`
-    pub type_url: String,
-    /// Opaque config — each factory deserializes into its own Config type.
-    pub config: serde_json::Value,
-}
+// Re-export TypedConfig from slick-types — same type, single source of truth.
+pub use slick_types::TypedConfig;
 
 /// Factory trait for processor extensions.
 ///
@@ -148,10 +139,6 @@ macro_rules! register_processor {
     };
 }
 
-// Type-erased factory stored in the registry.
-type BoxedFactory =
-    Box<dyn Fn(&serde_json::Value) -> Result<Arc<dyn Processor>, ProcessorError> + Send + Sync>;
-
 /// Builder for [`ProcessorRegistry`]. Immutable after [`build()`](Self::build).
 ///
 /// Two registration paths:
@@ -159,13 +146,13 @@ type BoxedFactory =
 ///   `inventory::submit!` registrations. Zero code changes when extensions change.
 /// - [`with`](Self::with) — tests/explicit. Fluent builder for direct registration.
 pub struct ProcessorRegistryBuilder {
-    factories: HashMap<String, BoxedFactory>,
+    inner: slick_types::TypedRegistryBuilder<Arc<dyn Processor>, ProcessorError>,
 }
 
 impl ProcessorRegistryBuilder {
     pub fn new() -> Self {
         Self {
-            factories: HashMap::new(),
+            inner: slick_types::TypedRegistryBuilder::new(),
         }
     }
 
@@ -184,17 +171,7 @@ impl ProcessorRegistryBuilder {
     #[must_use]
     pub fn collect_extensions(mut self) -> Self {
         for reg in inventory::iter::<ProcessorRegistration> {
-            if self.factories.contains_key(reg.type_url) {
-                panic!(
-                    "duplicate processor type URL '{}' — two extensions claim the same type URL. \
-                     Each type URL must be registered exactly once.",
-                    reg.type_url
-                );
-            }
-            self.factories.insert(
-                reg.type_url.to_owned(),
-                Box::new(reg.factory),
-            );
+            self.inner = self.inner.register_unique(reg.type_url, reg.factory);
         }
         self
     }
@@ -205,27 +182,23 @@ impl ProcessorRegistryBuilder {
     /// Useful for tests or when you want explicit control over registration.
     #[must_use]
     pub fn with<T: IntoProcessor>(mut self, type_url: &str) -> Self {
-        let url = type_url.to_owned();
-        let url_for_closure = url.clone();
-        self.factories.insert(
-            url,
-            Box::new(move |value: &serde_json::Value| {
-                let config: T::Config = serde_json::from_value(value.clone()).map_err(|e| {
-                    ProcessorError::new(
-                        &url_for_closure,
-                        format!("config deserialization failed: {e}"),
-                    )
-                })?;
-                T::from_config(config)
-            }),
-        );
+        let url_for_closure = type_url.to_owned();
+        self.inner = self.inner.register(type_url, move |value: &serde_json::Value| {
+            let config: T::Config = serde_json::from_value(value.clone()).map_err(|e| {
+                ProcessorError::new(
+                    &url_for_closure,
+                    format!("config deserialization failed: {e}"),
+                )
+            })?;
+            T::from_config(config)
+        });
         self
     }
 
     /// Freeze the registry. No further registrations possible.
     pub fn build(self) -> ProcessorRegistry {
         ProcessorRegistry {
-            factories: self.factories,
+            inner: self.inner.build(),
         }
     }
 }
@@ -236,12 +209,30 @@ impl Default for ProcessorRegistryBuilder {
     }
 }
 
+/// Flatten `RegistryError<ProcessorError>` → `ProcessorError`.
+fn flatten_error(e: RegistryError<ProcessorError>) -> ProcessorError {
+    match e {
+        RegistryError::UnknownTypeUrl {
+            type_url,
+            available,
+        } => ProcessorError::new(
+            &type_url,
+            format!(
+                "unknown type URL '{}'. registered: [{}]",
+                type_url,
+                available.join(", ")
+            ),
+        ),
+        RegistryError::Factory { source, .. } => source,
+    }
+}
+
 /// Immutable processor registry. Maps type URL → factory.
 ///
 /// Created via [`ProcessorRegistryBuilder::build`]. Thread-safe and
 /// shareable via `Arc`.
 pub struct ProcessorRegistry {
-    factories: HashMap<String, BoxedFactory>,
+    inner: slick_types::TypedRegistry<Arc<dyn Processor>, ProcessorError>,
 }
 
 impl ProcessorRegistry {
@@ -254,17 +245,7 @@ impl ProcessorRegistry {
         type_url: &str,
         config: &serde_json::Value,
     ) -> Result<Arc<dyn Processor>, ProcessorError> {
-        let factory = self.factories.get(type_url).ok_or_else(|| {
-            ProcessorError::new(
-                type_url,
-                format!(
-                    "unknown type URL '{}'. registered: [{}]",
-                    type_url,
-                    self.type_urls().join(", ")
-                ),
-            )
-        })?;
-        factory(config)
+        self.inner.create(type_url, config).map_err(flatten_error)
     }
 
     /// Instantiate processors from a list of typed config entries.
@@ -282,19 +263,17 @@ impl ProcessorRegistry {
 
     /// List all registered type URLs (for diagnostics).
     pub fn type_urls(&self) -> Vec<&str> {
-        let mut urls: Vec<&str> = self.factories.keys().map(|s| s.as_str()).collect();
-        urls.sort_unstable();
-        urls
+        self.inner.type_urls()
     }
 
     /// Returns the number of registered factories.
     pub fn len(&self) -> usize {
-        self.factories.len()
+        self.inner.len()
     }
 
     /// Returns true if no factories are registered.
     pub fn is_empty(&self) -> bool {
-        self.factories.is_empty()
+        self.inner.is_empty()
     }
 }
 
