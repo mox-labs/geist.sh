@@ -1,0 +1,19 @@
+[package]
+name = "slick-crust-wasm"
+description = "SLICK TypeScript crust — wasm-bindgen bindings for slick-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+serde.workspace = true
+serde-wasm-bindgen.workspace = true
+serde_json.workspace = true
+slick-types = { workspace = true, features = ["manifest"] }
