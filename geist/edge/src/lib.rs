@@ -27,6 +27,7 @@
 pub mod compositor;
 pub mod phase;
 pub mod processor;
+pub mod processors;
 pub mod registry;
 
 /// Prelude for convenient imports.

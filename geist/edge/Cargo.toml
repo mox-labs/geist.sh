@@ -18,7 +18,7 @@ rumi-http.workspace = true
 envoy-grpc-ext-proc = "0.1"
 
 # Typed extension registry (generic core)
-slick-types.workspace = true
+slickit.workspace = true
 
 # Extension registration
 inventory.workspace = true

@@ -1,4 +1,4 @@
-//! SLICK type system — Semantic LLM-Interpretable Component Kit.
+//! slickit — Semantic, LLM-Interpretable Component Kit.
 //!
 //! Two layers, both in-memory:
 //!
@@ -15,7 +15,7 @@
 //! # Example (runtime layer)
 //!
 //! ```
-//! use slick_types::{TypedConfig, TypedRegistryBuilder};
+//! use slickit::{TypedConfig, TypedRegistryBuilder};
 //!
 //! let registry = TypedRegistryBuilder::<String, String>::new()
 //!     .register("example.v1", |value| {
