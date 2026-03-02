@@ -21,12 +21,12 @@
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
-use slickit::RegistryError;
+use slick::RegistryError;
 
 use crate::processor::{Processor, ProcessorError};
 
-// Re-export TypedConfig from slickit — same type, single source of truth.
-pub use slickit::TypedConfig;
+// Re-export TypedConfig from slick — same type, single source of truth.
+pub use slick::TypedConfig;
 
 /// Factory trait for processor extensions.
 ///
@@ -146,13 +146,13 @@ macro_rules! register_processor {
 ///   `inventory::submit!` registrations. Zero code changes when extensions change.
 /// - [`with`](Self::with) — tests/explicit. Fluent builder for direct registration.
 pub struct ProcessorRegistryBuilder {
-    inner: slickit::TypedRegistryBuilder<Arc<dyn Processor>, ProcessorError>,
+    inner: slick::TypedRegistryBuilder<Arc<dyn Processor>, ProcessorError>,
 }
 
 impl ProcessorRegistryBuilder {
     pub fn new() -> Self {
         Self {
-            inner: slickit::TypedRegistryBuilder::new(),
+            inner: slick::TypedRegistryBuilder::new(),
         }
     }
 
@@ -232,7 +232,7 @@ fn flatten_error(e: RegistryError<ProcessorError>) -> ProcessorError {
 /// Created via [`ProcessorRegistryBuilder::build`]. Thread-safe and
 /// shareable via `Arc`.
 pub struct ProcessorRegistry {
-    inner: slickit::TypedRegistry<Arc<dyn Processor>, ProcessorError>,
+    inner: slick::TypedRegistry<Arc<dyn Processor>, ProcessorError>,
 }
 
 impl ProcessorRegistry {

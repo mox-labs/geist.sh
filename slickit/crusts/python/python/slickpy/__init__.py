@@ -1,4 +1,4 @@
-from .slick import (
+from .slickpy import (
     ComponentKind,
     ComponentManifest,
     ComponentContract,
