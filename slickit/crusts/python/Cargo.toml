@@ -8,7 +8,7 @@ repository.workspace = true
 authors.workspace = true
 
 [lib]
-name = "slick"
+name = "slickpy"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]

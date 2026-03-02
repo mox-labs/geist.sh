@@ -22,7 +22,7 @@ pub enum ComponentKind {
     Flow = 3,
 }
 
-impl From<ComponentKind> for slickit::ComponentKind {
+impl From<ComponentKind> for slick::ComponentKind {
     fn from(kind: ComponentKind) -> Self {
         match kind {
             ComponentKind::Agent => Self::Agent,
@@ -33,13 +33,13 @@ impl From<ComponentKind> for slickit::ComponentKind {
     }
 }
 
-impl From<slickit::ComponentKind> for ComponentKind {
-    fn from(kind: slickit::ComponentKind) -> Self {
+impl From<slick::ComponentKind> for ComponentKind {
+    fn from(kind: slick::ComponentKind) -> Self {
         match kind {
-            slickit::ComponentKind::Agent => Self::Agent,
-            slickit::ComponentKind::Capability => Self::Capability,
-            slickit::ComponentKind::Skill => Self::Skill,
-            slickit::ComponentKind::Flow => Self::Flow,
+            slick::ComponentKind::Agent => Self::Agent,
+            slick::ComponentKind::Capability => Self::Capability,
+            slick::ComponentKind::Skill => Self::Skill,
+            slick::ComponentKind::Flow => Self::Flow,
         }
     }
 }
@@ -53,7 +53,7 @@ impl From<slickit::ComponentKind> for ComponentKind {
 /// Constructed from and serialized to JS objects via serde-wasm-bindgen.
 #[wasm_bindgen]
 pub struct ComponentManifest {
-    inner: slickit::ComponentManifest,
+    inner: slick::ComponentManifest,
 }
 
 #[wasm_bindgen]
@@ -72,7 +72,7 @@ impl ComponentManifest {
     /// ```
     #[wasm_bindgen(js_name = "fromObject")]
     pub fn from_object(obj: JsValue) -> Result<ComponentManifest, JsValue> {
-        let inner: slickit::ComponentManifest = serde_wasm_bindgen::from_value(obj)
+        let inner: slick::ComponentManifest = serde_wasm_bindgen::from_value(obj)
             .map_err(|e| JsValue::from_str(&format!("invalid manifest: {e}")))?;
         Ok(Self { inner })
     }
@@ -87,7 +87,7 @@ impl ComponentManifest {
     /// Create from a JSON string.
     #[wasm_bindgen(js_name = "fromJson")]
     pub fn from_json(json: &str) -> Result<ComponentManifest, JsValue> {
-        let inner: slickit::ComponentManifest = serde_json::from_str(json)
+        let inner: slick::ComponentManifest = serde_json::from_str(json)
             .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
         Ok(Self { inner })
     }
@@ -125,7 +125,7 @@ impl ComponentManifest {
 /// Config envelope: type URL + opaque config.
 #[wasm_bindgen]
 pub struct TypedConfig {
-    inner: slickit::TypedConfig,
+    inner: slick::TypedConfig,
 }
 
 #[wasm_bindgen]
@@ -133,7 +133,7 @@ impl TypedConfig {
     /// Create from a JS object { type_url: string, config: any }.
     #[wasm_bindgen(js_name = "fromObject")]
     pub fn from_object(obj: JsValue) -> Result<TypedConfig, JsValue> {
-        let inner: slickit::TypedConfig = serde_wasm_bindgen::from_value(obj)
+        let inner: slick::TypedConfig = serde_wasm_bindgen::from_value(obj)
             .map_err(|e| JsValue::from_str(&format!("invalid config: {e}")))?;
         Ok(Self { inner })
     }

@@ -15,7 +15,7 @@
 //! # Example (runtime layer)
 //!
 //! ```
-//! use slickit::{TypedConfig, TypedRegistryBuilder};
+//! use slick::{TypedConfig, TypedRegistryBuilder};
 //!
 //! let registry = TypedRegistryBuilder::<String, String>::new()
 //!     .register("example.v1", |value| {

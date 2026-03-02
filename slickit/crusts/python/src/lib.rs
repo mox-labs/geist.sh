@@ -48,7 +48,7 @@ impl ComponentKind {
     }
 }
 
-impl From<ComponentKind> for slickit::ComponentKind {
+impl From<ComponentKind> for slick::ComponentKind {
     fn from(kind: ComponentKind) -> Self {
         match kind {
             ComponentKind::Agent => Self::Agent,
@@ -59,13 +59,13 @@ impl From<ComponentKind> for slickit::ComponentKind {
     }
 }
 
-impl From<slickit::ComponentKind> for ComponentKind {
-    fn from(kind: slickit::ComponentKind) -> Self {
+impl From<slick::ComponentKind> for ComponentKind {
+    fn from(kind: slick::ComponentKind) -> Self {
         match kind {
-            slickit::ComponentKind::Agent => Self::Agent,
-            slickit::ComponentKind::Capability => Self::Capability,
-            slickit::ComponentKind::Skill => Self::Skill,
-            slickit::ComponentKind::Flow => Self::Flow,
+            slick::ComponentKind::Agent => Self::Agent,
+            slick::ComponentKind::Capability => Self::Capability,
+            slick::ComponentKind::Skill => Self::Skill,
+            slick::ComponentKind::Flow => Self::Flow,
         }
     }
 }
@@ -209,7 +209,7 @@ impl ComponentManifest {
     /// Deserialize from JSON string.
     #[staticmethod]
     fn from_json(json: &str) -> PyResult<Self> {
-        let inner: slickit::ComponentManifest =
+        let inner: slick::ComponentManifest =
             serde_json::from_str(json).map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(from_inner_manifest(inner))
     }
@@ -254,20 +254,20 @@ impl TypedConfig {
 // Conversion helpers (PyO3 ↔ slickit)
 // ═══════════════════════════════════════════════════════════════════════
 
-fn to_inner_manifest(m: &ComponentManifest) -> slickit::ComponentManifest {
-    slickit::ComponentManifest {
+fn to_inner_manifest(m: &ComponentManifest) -> slick::ComponentManifest {
+    slick::ComponentManifest {
         kind: m.kind.into(),
         type_url: m.type_url.clone(),
         description: m.description.clone(),
-        contract: slickit::ComponentContract {
+        contract: slick::ComponentContract {
             consumes: m.contract.consumes.clone(),
             produces: m.contract.produces.clone(),
             assertions: m.contract.assertions.clone(),
             boundaries: m.contract.boundaries.clone(),
         },
-        envelope: slickit::BehavioralEnvelope {
+        envelope: slick::BehavioralEnvelope {
             resource_bounds: m.envelope.resource_bounds.as_ref().map(|rb| {
-                slickit::ResourceBounds {
+                slick::ResourceBounds {
                     max_tokens: rb.max_tokens,
                     max_latency_ms: rb.max_latency_ms,
                     max_cost_usd: rb.max_cost_usd,
@@ -278,7 +278,7 @@ fn to_inner_manifest(m: &ComponentManifest) -> slickit::ComponentManifest {
     }
 }
 
-fn from_inner_manifest(inner: slickit::ComponentManifest) -> ComponentManifest {
+fn from_inner_manifest(inner: slick::ComponentManifest) -> ComponentManifest {
     ComponentManifest {
         kind: inner.kind.into(),
         type_url: inner.type_url,
@@ -304,9 +304,9 @@ fn from_inner_manifest(inner: slickit::ComponentManifest) -> ComponentManifest {
 // Module
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Python module: `slick`
+/// Python module: `slickpy`
 #[pymodule]
-fn slick(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn slickpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ComponentKind>()?;
     m.add_class::<ComponentManifest>()?;
     m.add_class::<ComponentContract>()?;

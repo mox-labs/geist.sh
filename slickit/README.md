@@ -25,7 +25,7 @@ Behind the `manifest` feature flag:
 ## Usage
 
 ```rust
-use slickit::{TypedConfig, TypedRegistryBuilder};
+use slick::{TypedConfig, TypedRegistryBuilder};
 
 // 1. Build a registry — register factories by type URL
 let registry = TypedRegistryBuilder::<String, String>::new()
@@ -52,11 +52,11 @@ let pipeline = registry.create_pipeline(&[
 
 ### Domain-specific wrapping
 
-slickit is generic. Domains wrap it with their own types:
+slick is generic. Domains wrap it with their own types:
 
 ```rust
 use std::sync::Arc;
-use slickit::{TypedRegistryBuilder, TypedRegistry, RegistryError};
+use slick::{TypedRegistryBuilder, TypedRegistry, RegistryError};
 
 // Your domain trait
 trait Processor: Send + Sync {
@@ -77,7 +77,7 @@ This is how [geist-edge](https://github.com/mox-labs/geist.sh) uses it — `Proc
 ### Manifests
 
 ```rust
-use slickit::manifest::*;
+use slick::manifest::*;
 
 let manifest = ComponentManifest {
     kind: ComponentKind::Capability,
@@ -93,7 +93,7 @@ let manifest = ComponentManifest {
 };
 
 // type_url bridges authoring → runtime
-let config = slickit::TypedConfig {
+let config = slick::TypedConfig {
     type_url: "mox.geist.processors.v1.AccessControl".into(),
     config: serde_json::json!({"deny": [], "allow": []}),
 };
@@ -121,10 +121,11 @@ ComponentManifest                TypedConfig
 
 Rust is canonical. Crusts compile the same types to other surfaces:
 
-| Surface | Crate | Build tool |
-|---------|-------|------------|
-| Python | `slickit/crusts/python` | maturin |
-| TypeScript | `slickit/crusts/wasm` | wasm-pack |
+| Surface | Import | Crate | Build tool |
+|---------|--------|-------|------------|
+| Rust | `use slick::` | `slickit` | cargo |
+| Python | `import slickpy` | `slickit/crusts/python` | maturin |
+| TypeScript | `import { ... } from 'slick'` | `slickit/crusts/wasm` | wasm-pack |
 
 ## Dependencies
 
