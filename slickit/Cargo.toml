@@ -1,6 +1,6 @@
 [package]
-name = "slick-types"
-description = "SLICK type system — typed registry + component manifest (CRD/xDS layering)"
+name = "slickit"
+description = "Semantic, LLM-Interpretable Component Kit"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

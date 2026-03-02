@@ -1,6 +1,6 @@
 [package]
-name = "slick-crust-python"
-description = "SLICK Python crust — PyO3 bindings for slick-types"
+name = "slickit-crust-python"
+description = "SLICK Python crust — PyO3 bindings for slickit"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -13,5 +13,5 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 pyo3.workspace = true
-slick-types = { workspace = true, features = ["manifest"] }
+slickit = { workspace = true, features = ["manifest"] }
 serde_json.workspace = true

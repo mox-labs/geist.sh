@@ -2,7 +2,7 @@
 
 use rumi::{InputMatcher, MatchingData, StringMatchSpec};
 
-use crate::config::{AccessControlPolicy, AgentOpMatch};
+use super::config::{AccessControlPolicy, AgentOpMatch};
 
 /// Compiled policy evaluator. Immutable after construction.
 ///
@@ -145,7 +145,7 @@ fn matches_field(matcher: &Option<Box<dyn InputMatcher>>, value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{AllowRule, DenyRule};
+    use super::super::config::{AllowRule, DenyRule};
 
     fn simple_policy() -> AccessControlPolicy {
         AccessControlPolicy {

@@ -1,4 +1,4 @@
-//! slick-ts — TypeScript bindings for slick-types via wasm-bindgen.
+//! slick-ts — TypeScript bindings for slickit via wasm-bindgen.
 //!
 //! Exposes SLICK's component type system to TypeScript/Svelte: ComponentKind,
 //! ComponentManifest, ComponentContract, BehavioralEnvelope, TypedConfig.
@@ -22,7 +22,7 @@ pub enum ComponentKind {
     Flow = 3,
 }
 
-impl From<ComponentKind> for slick_types::ComponentKind {
+impl From<ComponentKind> for slickit::ComponentKind {
     fn from(kind: ComponentKind) -> Self {
         match kind {
             ComponentKind::Agent => Self::Agent,
@@ -33,13 +33,13 @@ impl From<ComponentKind> for slick_types::ComponentKind {
     }
 }
 
-impl From<slick_types::ComponentKind> for ComponentKind {
-    fn from(kind: slick_types::ComponentKind) -> Self {
+impl From<slickit::ComponentKind> for ComponentKind {
+    fn from(kind: slickit::ComponentKind) -> Self {
         match kind {
-            slick_types::ComponentKind::Agent => Self::Agent,
-            slick_types::ComponentKind::Capability => Self::Capability,
-            slick_types::ComponentKind::Skill => Self::Skill,
-            slick_types::ComponentKind::Flow => Self::Flow,
+            slickit::ComponentKind::Agent => Self::Agent,
+            slickit::ComponentKind::Capability => Self::Capability,
+            slickit::ComponentKind::Skill => Self::Skill,
+            slickit::ComponentKind::Flow => Self::Flow,
         }
     }
 }
@@ -53,7 +53,7 @@ impl From<slick_types::ComponentKind> for ComponentKind {
 /// Constructed from and serialized to JS objects via serde-wasm-bindgen.
 #[wasm_bindgen]
 pub struct ComponentManifest {
-    inner: slick_types::ComponentManifest,
+    inner: slickit::ComponentManifest,
 }
 
 #[wasm_bindgen]
@@ -72,7 +72,7 @@ impl ComponentManifest {
     /// ```
     #[wasm_bindgen(js_name = "fromObject")]
     pub fn from_object(obj: JsValue) -> Result<ComponentManifest, JsValue> {
-        let inner: slick_types::ComponentManifest = serde_wasm_bindgen::from_value(obj)
+        let inner: slickit::ComponentManifest = serde_wasm_bindgen::from_value(obj)
             .map_err(|e| JsValue::from_str(&format!("invalid manifest: {e}")))?;
         Ok(Self { inner })
     }
@@ -87,7 +87,7 @@ impl ComponentManifest {
     /// Create from a JSON string.
     #[wasm_bindgen(js_name = "fromJson")]
     pub fn from_json(json: &str) -> Result<ComponentManifest, JsValue> {
-        let inner: slick_types::ComponentManifest = serde_json::from_str(json)
+        let inner: slickit::ComponentManifest = serde_json::from_str(json)
             .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
         Ok(Self { inner })
     }
@@ -125,7 +125,7 @@ impl ComponentManifest {
 /// Config envelope: type URL + opaque config.
 #[wasm_bindgen]
 pub struct TypedConfig {
-    inner: slick_types::TypedConfig,
+    inner: slickit::TypedConfig,
 }
 
 #[wasm_bindgen]
@@ -133,7 +133,7 @@ impl TypedConfig {
     /// Create from a JS object { type_url: string, config: any }.
     #[wasm_bindgen(js_name = "fromObject")]
     pub fn from_object(obj: JsValue) -> Result<TypedConfig, JsValue> {
-        let inner: slick_types::TypedConfig = serde_wasm_bindgen::from_value(obj)
+        let inner: slickit::TypedConfig = serde_wasm_bindgen::from_value(obj)
             .map_err(|e| JsValue::from_str(&format!("invalid config: {e}")))?;
         Ok(Self { inner })
     }

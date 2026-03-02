@@ -321,19 +321,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "geist-acl"
-version = "0.0.1"
-dependencies = [
- "geist-edge",
- "inventory",
- "rumi-core",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "geist-edge"
 version = "0.0.1"
 dependencies = [
@@ -345,7 +332,7 @@ dependencies = [
  "rumi-http",
  "serde",
  "serde_json",
- "slick-types",
+ "slickit",
  "tokio",
  "tower",
  "tracing",
@@ -355,7 +342,6 @@ dependencies = [
 name = "geist-sh"
 version = "0.0.1"
 dependencies = [
- "geist-acl",
  "geist-edge",
  "serde_json",
  "tokio",
@@ -1371,32 +1357,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
-name = "slick-crust-python"
+name = "slickit"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "slickit-crust-python"
 version = "0.0.1"
 dependencies = [
  "pyo3",
  "serde_json",
- "slick-types",
+ "slickit",
 ]
 
 [[package]]
-name = "slick-crust-wasm"
+name = "slickit-crust-wasm"
 version = "0.0.1"
 dependencies = [
  "js-sys",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "slick-types",
+ "slickit",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "slick-types"
-version = "0.0.1"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]
