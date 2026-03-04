@@ -40,7 +40,7 @@ Tauri (geist-shell)
 - **Composable**: processors compose through pipeline + metadata, not direct coupling
 - **Extensible**: add processor = register extension + config entry, no core or adapter changes
 
-See `scratch/geist-edge-context-2026-02-22.md` for full architecture with blueprint source citations.
+See `scratch/geist-edge-context-2026-02-22.md` for full architecture context.
 
 ## Implementation Plan
 
@@ -53,8 +53,6 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 | **P4** | CLI demo (compose → configure → edge → agent session) | |
 | **P5** | geist-shell — Tauri desktop, SvelteKit frontend | |
 | **P6+** | Enterprise: Router compositor, OTel, pingora, xDS transport, control plane | Growth |
-
-**Note:** Claude Code hook enforcement moved to x.uma as the rumi CLI.
 
 ## Crate Layout
 
@@ -69,39 +67,7 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture with bluepr
 1. `.claude/docs/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
 2. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
 3. `.claude/docs/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
-4. `scratch/geist-edge-context-2026-02-22.md` — geist-edge architecture. Full capability-led connectivity model with blueprint source citations.
-5. `scratch/handoff-2026-02-21.md` — Session handoff covering P1 completion, naming resolution, guild outputs.
-6. `scratch/architecture-session-2026-02-20.md` — Gateway API extension, deployment modes, ECDS.
-7. `scratch/guild-deliberation-2026-02-19.md` — Guild record (10 members, 22 validation criteria).
-8. `scratch/act-synthesis-2026-02-19.md` — ACT research synthesis (90+ sources).
-
-### Blueprint Sources (External)
-
-Prior art from previous work — concepts apply, documents need sanitization before any public use.
-
-**geist.sh's twist:** Previous work was HTTP/gRPC focused and didn't reach Capability Edge. geist.sh applies these ideas with protocol-agnostic capability management (HTTP, gRPC, MCP, agent protocols) via protocol adapters.
-
-**Research & synthesis** (`blueprints/scratch/`):
-
-| Document | Concepts |
-|----------|----------|
-| `edge-api-era-understanding.md` | 4D framework, 29 principles, capability abstraction, ECDS |
-| `proxyless_api_management_strategy.md` | API Mesh, proxyless viability, golden path |
-| `composable-federated-data-plane-eval.md` | Three-layer architecture, latency analysis, migration economics |
-| `composable_data_plane_context.md` | ACES framework, composable data plane |
-| `data-plane-metadata-architecture.md` | Type-safe hierarchical metadata |
-| `research-capability-led-connectivity.md` | API-led → capability-led evolution, policy-processor separation |
-| `research-capability-led-connectivity-ext-proc.md` | ext_proc protocol lifecycle, unified processing model, Extension Protocol Adapter |
-
-**Case studies** (`blueprints/sources/case-studies/`):
-
-| Document | Concepts |
-|----------|----------|
-| `capability-connectivity-model/mox-apiserver-proxyless.md` | APIServer/APIClient pattern, logical capability IDs, xDS discovery, transparent decomposition |
-| `anatomy-of-a-data-plane/edge-api-platform-era.md` | Enterprise Edge, Extension Protocol Adapter (59 plugins, 6-8 weeks), perimeter vs protocol layers |
-| `anatomy-of-a-data-plane/unified-edge-compute-cluster.md` | Capability Edge, Enterprise Edge, two-boundary architecture, embedded vs sidecar |
-| `engineering-for-sustainable-excellence/aces-unified-processing-model.md` | Unified Processing Model, ProcessingAdaptor, deployment topologies |
-| `engineering-for-sustainable-excellence/aces-framework.md` | ACES framework, boundary-abstraction-implementation pattern |
+4. `rnd/kb-summary.md` — **Research knowledge base.** Reading guide to the research corpus on agentic systems, formal verification, and data plane design.
 
 ## Proto API Naming Convention
 

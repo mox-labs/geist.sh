@@ -3,8 +3,6 @@
 > **Date**: February 13, 2026
 > **Source**: `@anthropic-ai/sandbox-runtime` v0.0.35, Apache-2.0
 > **Upstream**: `github.com/anthropic-experimental/sandbox-runtime`
-> **Fork**: `github.com/yzavyas/sandbox-runtime` (1 commit ahead: CLI fix)
-> **Local paths**: `~/oss/sandbox-runtime` (upstream), `~/Projects/sandbox-runtime` (fork)
 
 ---
 

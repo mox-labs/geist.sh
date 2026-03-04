@@ -5,6 +5,9 @@ scratch/
 # OS
 .DS_Store
 
+# PDFs (reference by URL, don't commit binaries)
+*.pdf
+
 # Rust
 target/
 

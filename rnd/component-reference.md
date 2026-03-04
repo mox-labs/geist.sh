@@ -220,7 +220,7 @@
 
 **What it doesn't provide that geist.sh adds**: Behavioral contracts, intent-action correlation, per-intent assembly, steering, eBPF observation.
 
-**Source**: [github.com/anthropic-experimental/sandbox-runtime](https://github.com/anthropic-experimental/sandbox-runtime), our fork at github.com/yzavyas/sandbox-runtime
+**Source**: [github.com/anthropic-experimental/sandbox-runtime](https://github.com/anthropic-experimental/sandbox-runtime)
 
 ---
 
