@@ -63,7 +63,7 @@ SLICK's behavioral contract concepts (Design-by-Contract for AI components) beco
 
 ### Context
 
-SLICK was proposed as a standalone semantic component kit. The guild assessment (K, Ace, Chesterton, Burner — all CONCERN) concluded: SLICK's insight is validated, SLICK as a standalone project is not.
+SLICK was proposed as a standalone semantic component kit. Internal review (unanimous CONCERN) concluded: SLICK's insight is validated, SLICK as a standalone project is not.
 
 ### What's Dead
 
@@ -98,7 +98,7 @@ Any consumer that doesn't understand `slick:` ignores it. Existing Agent Skills 
 ```
 SLICK (Behavioral Contracts) — extends frontmatter
 Agent Skills (Portable Format) — the canonical format
-cix (Distribution)            — the package manager
+cix (Distribution)            — the extension marketplace
 ```
 
 ### Evidence

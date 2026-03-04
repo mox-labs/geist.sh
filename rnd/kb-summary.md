@@ -39,11 +39,12 @@ Reading guide to the geist.sh research corpus. 13 documents covering agentic sys
 
 ## Reading Order
 
-1. **`geist-research-synthesis.md`** — verified claims, corrections, and the core thesis (constrained composition > unconstrained generation)
-2. **`synthesis-agentic-data-plane.md`** — landscape analysis with evidence labels
-3. **`synthesis-geist-adr.md`** — architectural decisions with rationale
-4. **`component-reference.md`** — if you need to understand a specific technology
-5. Academic papers — for primary source verification
+1. **`synthesis-comprehensive.md`** — start here. Integrates and supersedes the three synthesis files below. Problem space, architecture, prior art, evidence base, ADRs, open questions.
+2. **`component-reference.md`** — if you need to understand a specific technology
+3. Academic papers — for primary source verification
+4. **`geist-research-synthesis.md`** — detailed claim verification and corrections (superseded by `synthesis-comprehensive.md`, kept as reference)
+5. **`synthesis-agentic-data-plane.md`** — detailed landscape analysis (superseded by `synthesis-comprehensive.md`, kept as reference)
+6. **`synthesis-geist-adr.md`** — detailed ADRs (superseded by `synthesis-comprehensive.md`, kept as reference)
 
 ## Clusters
 
@@ -104,7 +105,7 @@ Wrap entire plugin pipelines with a single protocol adapter rather than rewritin
 
 Decouple "what should happen" (policy/config) from "how it happens" (processor implementation). Tenant policies remain stable during processor upgrades. Platform evolves implementations without tenant reconfiguration.
 
-**In geist.sh**: Each processor owns its config type. Typed extension registry maps type URLs to factories. No generic PolicyEvaluator — processors compile policy to rumi matchers at construction time.
+**In geist.sh**: Each processor owns its config type. Typed extension registry maps type URLs to factories. No generic PolicyEvaluator — processors compile their policy to matchers at construction time.
 
 ### 4D Architecture Framework
 

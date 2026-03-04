@@ -282,6 +282,6 @@ What doesn't exist:
 | geist-cognitive-data-planes-v2 (Report 3) | Deep research | Traceability matrix, dual-tool eBPF strategy, best technical accuracy |
 | slick-component-architecture-analysis (Report 2) | Deep research | Variance reduction evidence, Design-by-Contract, hexagonal architecture |
 | geist-research-synthesis | Prior synthesis | Verified claims, corrections, confidence levels |
-| slick-guild-synthesis | Guild verdict | SLICK → Agent Skills extensions, three-move sequence |
+| slick-review-synthesis | Internal review | SLICK → Agent Skills extensions, three-move sequence |
 | architectural-analysis-critique | Critique | Sentinel Layer reality check, WIT→LSM gap, engineering estimates |
 | research-synthesis-2026-02-13 | Working document | Earlier partial synthesis (superseded by this document) |

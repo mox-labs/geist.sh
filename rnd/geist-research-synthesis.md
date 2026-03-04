@@ -117,7 +117,7 @@ Across all three reports, these gaps remain unaddressed:
 
 4. **macOS development story.** eBPF is Linux-only. All three reports assume Linux deployment. No discussion of development ergonomics on Darwin (the primary development platform for this project).
 
-5. **HUD control plane.** Referenced in session context but absent from all research reports. How does configuration reach geist instances? Push vs pull? Format? Security?
+5. **Control plane.** Absent from all research reports. How does configuration reach geist instances? Push vs pull? Format? Security?
 
 6. **Cost model.** No analysis of memory overhead per agent instance, compute cost at scale, or comparison with container-based approaches at equivalent workload.
 
