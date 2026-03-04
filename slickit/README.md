@@ -30,4 +30,4 @@ assert_eq!(instance, "hello");
 
 ## License
 
-MIT OR Apache-2.0
+BSL 1.1 — see [LICENSE](../LICENSE) for details. Converts to Apache-2.0 on 2030-03-03.
