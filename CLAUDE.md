@@ -7,7 +7,7 @@ Desktop AI collaborator for knowledge workers. A packaged app where users set up
 
 ## What geist.sh Is
 
-A desktop application (Tauri) for knowledge workers — not just developers. Users set up their collaborator(s) with pre-installed skills, and the agent operates within a governed runtime (geist-edge). Think OpenClaw but for knowledge workers, with capability-led connectivity as the runtime model.
+A desktop application (Tauri) for knowledge workers — not just developers. Users set up their collaborator(s) with pre-installed skills, and the agent operates within a governed runtime (geist-edge). Capability-led connectivity as the runtime model.
 
 - **geist-edge** = the composable data plane runtime. Implements the Extension Protocol Adapter pattern — portable processing capabilities across runtimes (axum, pingora, ext_proc). Same building blocks at edge and per-service. Includes typed extension registry for processor pluggability.
 - **geist-shell** = Tauri desktop container. SvelteKit frontend in webview.
@@ -40,7 +40,7 @@ Tauri (geist-shell)
 - **Composable**: processors compose through pipeline + metadata, not direct coupling
 - **Extensible**: add processor = register extension + config entry, no core or adapter changes
 
-See `scratch/geist-edge-context-2026-02-22.md` for full architecture context.
+See `.claude/docs/capability-led-connectivity.md` for the full processing model.
 
 ## Implementation Plan
 
@@ -58,16 +58,15 @@ See `scratch/geist-edge-context-2026-02-22.md` for full architecture context.
 
 | Crate | Path | Role |
 |-------|------|------|
-| `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, adapters |
+| `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, built-in processors (incl. access control) |
 | `geist-sh` | `geist/bin` | Binary — composition root, links extensions, starts adapter + agent runtime |
-| `geist-acl` | `geist/acl` | Access control processor extension (P1.5) |
+| `slickit` | `slickit/` | Generic typed extension registry — `TypedConfig`, `TypedRegistry<T, E>` |
 
 ## Key Documents
 
 1. `.claude/docs/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
 2. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
 3. `.claude/docs/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
-4. `rnd/kb-summary.md` — **Research knowledge base.** Reading guide to the research corpus on agentic systems, formal verification, and data plane design.
 
 ## Proto API Naming Convention
 
