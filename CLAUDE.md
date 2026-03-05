@@ -40,7 +40,7 @@ Tauri (geist-shell)
 - **Composable**: processors compose through pipeline + metadata, not direct coupling
 - **Extensible**: add processor = register extension + config entry, no core or adapter changes
 
-See `.claude/docs/capability-led-connectivity.md` for the full processing model.
+See `scratch/capability-led-connectivity.md` for the full processing model.
 
 ## Implementation Plan
 
@@ -64,9 +64,9 @@ See `.claude/docs/capability-led-connectivity.md` for the full processing model.
 
 ## Key Documents
 
-1. `.claude/docs/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
-2. `.claude/docs/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
-3. `.claude/docs/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
+1. `scratch/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
+2. `scratch/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
+3. `scratch/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
 
 ## Proto API Naming Convention
 
