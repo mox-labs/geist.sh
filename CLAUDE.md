@@ -48,7 +48,7 @@ See `scratch/capability-led-connectivity.md` for the full processing model.
 |-------|------|--------|
 | **P1** | geist-edge core — Processor trait, Sequence compositor, PhaseResult, ProcessingMode | **Done** (67 tests) |
 | **P1.5** | Typed extension registry + access control processor extension | **Done** (40 tests, 3 PRs: #8 registry, #9 access-control, #10 composition root) |
-| **P2** | axum adapter + governed proxy binary | |
+| **P2** | Processor trait refactor (`http::` types) + axum adapter + OTel + Docker | **Done** (48 tests) |
 | **P3** | Composer (intent → capability selection from cix catalog) | |
 | **P4** | CLI demo (compose → configure → edge → agent session) | |
 | **P5** | geist-shell — Tauri desktop, SvelteKit frontend | |
@@ -83,7 +83,7 @@ apis/proto/mox/geist/
 
 - **Deny-first evaluation** — consensus across Cedar, SCT, OWASP
 - **`&self` Processor trait** — enables Arc sharing, hyper school pattern
-- **Hexagonal architecture** — edge core has zero HTTP types without adapter features
+- **Hexagonal architecture** — edge core uses `http::` types as protocol vocabulary (like serde), adapters are feature-gated
 - **Typed extension registry** — processors register via type URL + factory (same pattern as rumi RegistryBuilder and Envoy FactoryRegistry). Each processor owns its policy/config type. No generic PolicyEvaluator.
 - **Policy-processor separation** — each processor owns its config/policy type and compiles to rumi matchers at construction. No generic PolicyEvaluator, no AgentOp intermediary.
 - **Tower in HTTP adapter only** — never in domain core
@@ -93,7 +93,7 @@ apis/proto/mox/geist/
 - **ACES as system quality** — not a specific pattern, achieved through implementation choices
 - **Capability-led connectivity** — processors portable across runtimes via unified contract
 - **Open source runtime, service-based business** — gestalt.mox.nexus is the managed platform
-- **ProcessingRequest/Response from ext_proc protos** — not hand-rolled. Via `envoy-grpc-ext-proc`, re-exported by `rumi-http`. `HttpMessage` (indexed view) from `rumi-http`.
+- **`http::` types as processor input** — `&http::request::Parts` / `&http::response::Parts`. Own `HeaderMutations` and `ImmediateResponse` using `http::` vocabulary. ext_proc types only in ext_proc adapter (P6+).
 
 ## Git Workflow
 
@@ -111,5 +111,14 @@ Inherits mox conventions (conventional commits, fetch+rebase). Project-specific:
 ## Quick Verification
 
 ```bash
+# All tests (core + adapter)
 cargo test --workspace
+
+# Run locally
+cargo run -p geist-sh
+# curl http://localhost:3000/
+
+# Docker (from mox/ parent directory)
+docker compose -f geist.sh/docker-compose.yml up
+# Jaeger UI: http://localhost:16686
 ```

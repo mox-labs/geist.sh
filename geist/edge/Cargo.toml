@@ -12,16 +12,18 @@ default = []
 adapter-axum = ["dep:axum", "dep:tower", "dep:hyper", "dep:tokio"]
 
 [dependencies]
-# Core: matcher engine + ext_proc types (ProcessingRequest/Response, HttpMessage)
+# Core: matcher engine (ACL evaluator uses rumi matchers)
 rumi.workspace = true
-rumi-http.workspace = true
-envoy-grpc-ext-proc = "0.1"
 
 # Typed extension registry (generic core)
 slickit.workspace = true
 
 # Extension registration
 inventory.workspace = true
+
+# Protocol vocabulary
+http.workspace = true
+bytes.workspace = true
 
 # Serialization + observability (always)
 serde.workspace = true

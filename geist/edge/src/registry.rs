@@ -34,18 +34,6 @@ pub type ProcessorRegistry = TypedRegistry<Arc<dyn Processor>, ProcessorError>;
 /// Each processor defines its `Config` type (policy + runtime config combined).
 /// The trait is monomorphized at registration time and type-erased at runtime
 /// via the closure captured in [`register_processor!`].
-///
-/// # Example
-///
-/// ```ignore
-/// impl IntoProcessor for AccessControlProcessor {
-///     type Config = AccessControlPolicy;
-///
-///     fn from_config(config: Self::Config) -> Result<Arc<dyn Processor>, ProcessorError> {
-///         Ok(Arc::new(AccessControlProcessor::new(config)?))
-///     }
-/// }
-/// ```
 pub trait IntoProcessor: Send + Sync + 'static {
     /// The configuration type this processor is built from.
     type Config: DeserializeOwned + Send + Sync;
@@ -59,35 +47,6 @@ pub trait IntoProcessor: Send + Sync + 'static {
 /// Extension crates submit these via [`register_processor!`] (preferred) or
 /// raw `inventory::submit!` (advanced). The binary collects them via
 /// [`collect_processor_extensions`].
-///
-/// # Example
-///
-/// Preferred — via macro:
-///
-/// ```ignore
-/// geist_edge::register_processor!(
-///     "mox.geist.processors.v1.AccessControl",
-///     AccessControlProcessor
-/// );
-/// ```
-///
-/// Advanced — raw registration:
-///
-/// ```ignore
-/// inventory::submit! {
-///     ProcessorRegistration {
-///         type_url: "mox.geist.processors.v1.AccessControl",
-///         factory: |value| {
-///             let config: AccessControlPolicy = serde_json::from_value(value.clone())
-///                 .map_err(|e| ProcessorError::new(
-///                     "mox.geist.processors.v1.AccessControl",
-///                     format!("config deserialization failed: {e}"),
-///                 ))?;
-///             AccessControlProcessor::from_config(config)
-///         },
-///     }
-/// }
-/// ```
 pub struct ProcessorRegistration {
     /// xDS type URL — the factory lookup key.
     pub type_url: &'static str,
@@ -100,17 +59,6 @@ inventory::collect!(ProcessorRegistration);
 /// Register a processor extension via `inventory::submit!`.
 ///
 /// Bridges the [`IntoProcessor`] trait to distributed static registration.
-///
-/// # Example
-///
-/// ```ignore
-/// use geist_edge::register_processor;
-///
-/// register_processor!(
-///     "mox.geist.processors.v1.AccessControl",
-///     AccessControlProcessor
-/// );
-/// ```
 #[macro_export]
 macro_rules! register_processor {
     ($type_url:expr, $processor_type:ty) => {
@@ -137,10 +85,6 @@ macro_rules! register_processor {
 /// Returns a [`TypedRegistryBuilder`] seeded with all discovered extensions.
 /// Call `.build()` to freeze it into an immutable [`ProcessorRegistry`].
 ///
-/// ```ignore
-/// let registry = collect_processor_extensions().build();
-/// ```
-///
 /// # Panics
 ///
 /// Panics if two extensions register the same type URL.
@@ -158,7 +102,6 @@ mod tests {
     use super::*;
     use crate::phase::PhaseResult;
     use crate::processor::BoxFuture;
-    use rumi_http::HttpMessage;
 
     /// Helper to extract error since Arc<dyn Processor> doesn't impl Debug.
     fn unwrap_err(
@@ -198,7 +141,7 @@ mod tests {
 
         fn process_request_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::request::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
             Box::pin(async { Ok(PhaseResult::Continue) })
         }

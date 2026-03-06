@@ -13,7 +13,9 @@ mod evaluator;
 
 use std::sync::Arc;
 
-use crate::phase::PhaseResult;
+use bytes::Bytes;
+
+use crate::phase::{ImmediateResponse, PhaseResult};
 use crate::processor::{BoxFuture, Processor, ProcessorError};
 use crate::registry::IntoProcessor;
 
@@ -21,13 +23,6 @@ use config::AccessControlPolicy;
 use evaluator::{AgentOp, PolicyDecision, PolicyEvaluator};
 
 pub use config::{AccessControlPolicy as Policy, AgentOpMatch, AllowRule, DenyRule};
-
-use rumi_http::HttpMessage;
-
-use envoy_grpc_ext_proc::envoy::{
-    r#type::v3::HttpStatus,
-    service::ext_proc::v3::ImmediateResponse,
-};
 
 /// Type URL for this processor extension.
 pub const TYPE_URL: &str = "mox.geist.processors.v1.AccessControl";
@@ -54,6 +49,15 @@ impl AccessControlProcessor {
     }
 }
 
+/// Extract a header value from request parts, returning the given default if missing.
+fn get_header<'a>(parts: &'a http::request::Parts, name: &str, default: &'a str) -> &'a str {
+    parts
+        .headers
+        .get(name)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or(default)
+}
+
 impl Processor for AccessControlProcessor {
     fn name(&self) -> &str {
         "access-control"
@@ -61,14 +65,14 @@ impl Processor for AccessControlProcessor {
 
     fn process_request_headers(
         &self,
-        msg: &HttpMessage,
+        parts: &http::request::Parts,
     ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
         let op = AgentOp {
-            agent_id: msg.header("x-geist-agent-id").unwrap_or("unknown"),
-            tool_name: msg.header("x-geist-tool-name").unwrap_or("unknown"),
-            resource: msg.header("x-geist-resource").unwrap_or("/"),
-            operation: msg.header("x-geist-operation").unwrap_or(""),
-            session_id: msg.header("x-geist-session-id").unwrap_or(""),
+            agent_id: get_header(parts, "x-geist-agent-id", "unknown"),
+            tool_name: get_header(parts, "x-geist-tool-name", "unknown"),
+            resource: get_header(parts, "x-geist-resource", "/"),
+            operation: get_header(parts, "x-geist-operation", ""),
+            session_id: get_header(parts, "x-geist-session-id", ""),
         };
 
         let decision = self.evaluator.evaluate(&op);
@@ -82,11 +86,14 @@ impl Processor for AccessControlProcessor {
                         "reason": reason
                     })
                     .to_string();
-                    Ok(PhaseResult::Respond(ImmediateResponse {
-                        status: Some(HttpStatus { code: 403 }),
-                        body: body.into_bytes(),
-                        ..Default::default()
-                    }))
+                    Ok(PhaseResult::Respond(
+                        ImmediateResponse::with_status(http::StatusCode::FORBIDDEN)
+                            .body(Bytes::from(body))
+                            .header(
+                                http::header::CONTENT_TYPE,
+                                http::HeaderValue::from_static("application/json"),
+                            ),
+                    ))
                 }
             }
         })
@@ -107,31 +114,13 @@ crate::register_processor!(TYPE_URL, AccessControlProcessor);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use envoy_grpc_ext_proc::envoy::{
-        config::core::v3::{HeaderMap, HeaderValue},
-        service::ext_proc::v3::{processing_request::Request, HttpHeaders, ProcessingRequest},
-    };
 
-    fn make_request(headers: Vec<(&str, &str)>) -> HttpMessage {
-        let header_values: Vec<HeaderValue> = headers
-            .into_iter()
-            .map(|(k, v)| HeaderValue {
-                key: k.to_string(),
-                value: v.to_string(),
-                raw_value: vec![],
-            })
-            .collect();
-
-        let req = ProcessingRequest {
-            request: Some(Request::RequestHeaders(HttpHeaders {
-                headers: Some(HeaderMap {
-                    headers: header_values,
-                }),
-                ..Default::default()
-            })),
-            ..Default::default()
-        };
-        HttpMessage::from(&req)
+    fn make_request(headers: Vec<(&str, &str)>) -> http::request::Parts {
+        let mut builder = http::Request::builder();
+        for (k, v) in headers {
+            builder = builder.header(k, v);
+        }
+        builder.body(()).unwrap().into_parts().0
     }
 
     fn simple_policy() -> AccessControlPolicy {
@@ -155,28 +144,28 @@ mod tests {
     #[tokio::test]
     async fn allowed_operation_continues() {
         let proc = AccessControlProcessor::new(simple_policy()).unwrap();
-        let msg = make_request(vec![
+        let parts = make_request(vec![
             ("x-geist-agent-id", "claude-main"),
             ("x-geist-tool-name", "Read"),
             ("x-geist-resource", "/src/lib.rs"),
         ]);
-        let result = proc.process_request_headers(&msg).await.unwrap();
+        let result = proc.process_request_headers(&parts).await.unwrap();
         assert!(matches!(result, PhaseResult::Continue));
     }
 
     #[tokio::test]
     async fn denied_tool_returns_403() {
         let proc = AccessControlProcessor::new(simple_policy()).unwrap();
-        let msg = make_request(vec![
+        let parts = make_request(vec![
             ("x-geist-agent-id", "claude-main"),
             ("x-geist-tool-name", "Bash"),
             ("x-geist-resource", "/"),
         ]);
-        let result = proc.process_request_headers(&msg).await.unwrap();
+        let result = proc.process_request_headers(&parts).await.unwrap();
         match result {
             PhaseResult::Respond(resp) => {
-                assert_eq!(resp.status.unwrap().code, 403);
-                let body = String::from_utf8(resp.body).unwrap();
+                assert_eq!(resp.status, http::StatusCode::FORBIDDEN);
+                let body = String::from_utf8(resp.body.to_vec()).unwrap();
                 assert!(body.contains("access_denied"));
                 assert!(body.contains("No Bash"));
             }
@@ -187,20 +176,20 @@ mod tests {
     #[tokio::test]
     async fn unknown_agent_denied_by_default() {
         let proc = AccessControlProcessor::new(simple_policy()).unwrap();
-        let msg = make_request(vec![
+        let parts = make_request(vec![
             ("x-geist-agent-id", "rogue-agent"),
             ("x-geist-tool-name", "Read"),
             ("x-geist-resource", "/src/lib.rs"),
         ]);
-        let result = proc.process_request_headers(&msg).await.unwrap();
+        let result = proc.process_request_headers(&parts).await.unwrap();
         assert!(matches!(result, PhaseResult::Respond(_)));
     }
 
     #[tokio::test]
     async fn missing_headers_use_defaults() {
         let proc = AccessControlProcessor::new(simple_policy()).unwrap();
-        let msg = make_request(vec![]);
-        let result = proc.process_request_headers(&msg).await.unwrap();
+        let parts = make_request(vec![]);
+        let result = proc.process_request_headers(&parts).await.unwrap();
         assert!(matches!(result, PhaseResult::Respond(_)));
     }
 

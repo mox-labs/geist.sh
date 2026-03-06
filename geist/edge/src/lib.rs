@@ -1,13 +1,13 @@
 //! geist-edge: Composable data plane runtime for geist.sh.
 //!
-//! Processor pipeline with phase-native processing, built on the ext_proc
-//! processing model (ProcessingRequest/ProcessingResponse as universal contract).
+//! Processor pipeline with phase-native processing, using `http::` types
+//! as protocol vocabulary for zero-copy adapter integration.
 //!
 //! # Architecture
 //!
 //! - **Processors** enforce policies (access control, rate limiting, auth, etc.)
 //! - **Compositors** orchestrate processors (Sequence for linear pipelines)
-//! - **Adapters** bridge runtime natives ↔ ext_proc types (axum, pingora)
+//! - **Adapters** bridge runtime natives ↔ processors (axum, pingora)
 //!
 //! # Writing an Extension
 //!
@@ -30,26 +30,16 @@ pub mod processor;
 pub mod processors;
 pub mod registry;
 
+#[cfg(feature = "adapter-axum")]
+pub mod adapter;
+
 /// Prelude for convenient imports.
 pub mod prelude {
     pub use crate::compositor::{FailureMode, Sequence, SequenceBuilder, SequenceOutcome};
-    pub use crate::phase::{PhaseResult, ProcessingMode};
+    pub use crate::phase::{HeaderMutations, ImmediateResponse, PhaseResult, ProcessingMode};
     pub use crate::processor::{BoxFuture, Processor, ProcessorError};
     pub use crate::registry::{
         collect_processor_extensions, IntoProcessor, ProcessorRegistration, ProcessorRegistry,
         TypedConfig, TypedRegistry, TypedRegistryBuilder,
-    };
-    pub use rumi_http::HttpMessage;
-
-    // Re-export ext_proc types that processor implementors need.
-    // This lets downstream crates (e.g. geist bin) avoid a direct
-    // envoy-grpc-ext-proc dependency.
-    pub use envoy_grpc_ext_proc::envoy::{
-        config::core::v3::{HeaderMap, HeaderValue, HeaderValueOption},
-        r#type::v3::HttpStatus,
-        service::ext_proc::v3::{
-            processing_request::Request, HeaderMutation, HttpHeaders, ImmediateResponse,
-            ProcessingRequest,
-        },
     };
 }

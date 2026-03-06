@@ -1,23 +1,21 @@
 //! Phase result and processing mode types.
 //!
-//! These are thin ergonomic wrappers over ext_proc proto types.
+//! These are geist-edge's own protocol vocabulary, using `http::` types
+//! (StatusCode, HeaderName, HeaderValue, HeaderMap) and `bytes::Bytes`.
 //!
-//! # Why PhaseResult (not raw ProcessingResponse)
+//! # Why PhaseResult (not raw response types)
 //!
-//! `ProcessingResponse::default()` is invalid — the `response` oneof is required
-//! and must match the request phase (Dijkstra I1). `PhaseResult` lets processors
-//! express intent without knowing which phase they're in. The compositor/adapter
-//! translates `PhaseResult` into the correct phase-specific `ProcessingResponse`.
+//! `PhaseResult` lets processors express intent without knowing which phase
+//! they're in. The compositor/adapter translates `PhaseResult` into the
+//! correct response.
 
-use envoy_grpc_ext_proc::envoy::service::ext_proc::v3::{
-    HeaderMutation, ImmediateResponse,
-};
+use bytes::Bytes;
 
 /// Result of a processor handling one phase of the HTTP lifecycle.
 ///
-/// The compositor translates this into the correct `ProcessingResponse` variant
+/// The compositor translates this into the correct response variant
 /// based on which phase produced it.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum PhaseResult {
     /// No mutation. Continue to the next processor in the pipeline.
     Continue,
@@ -27,13 +25,12 @@ pub enum PhaseResult {
     /// Mutations accumulate across processors in the pipeline and are
     /// returned to the adapter for application. Processors see the
     /// original message — not prior mutations.
-    Mutate(HeaderMutation),
+    Mutate(HeaderMutations),
 
     /// Short-circuit: send this response directly to the client.
     ///
     /// Terminates all subsequent processors in the current phase AND
-    /// all subsequent phases (Dijkstra I2). No upstream forwarding,
-    /// no response phases.
+    /// all subsequent phases. No upstream forwarding, no response phases.
     Respond(ImmediateResponse),
 }
 
@@ -44,17 +41,89 @@ impl PhaseResult {
     }
 }
 
+/// Header mutations to apply after pipeline processing.
+///
+/// The adapter applies these to a cloned `HeaderMap` at the end —
+/// one bulk operation, not per-processor.
+#[derive(Debug)]
+pub struct HeaderMutations {
+    /// Headers to set (add or overwrite).
+    pub set: Vec<(http::HeaderName, http::HeaderValue)>,
+    /// Headers to remove.
+    pub remove: Vec<http::HeaderName>,
+}
+
+impl HeaderMutations {
+    /// Create an empty mutation set.
+    pub fn new() -> Self {
+        Self {
+            set: Vec::new(),
+            remove: Vec::new(),
+        }
+    }
+
+    /// Add a header to set.
+    pub fn set_header(mut self, name: http::HeaderName, value: http::HeaderValue) -> Self {
+        self.set.push((name, value));
+        self
+    }
+
+    /// Add a header to remove.
+    pub fn remove_header(mut self, name: http::HeaderName) -> Self {
+        self.remove.push(name);
+        self
+    }
+}
+
+impl Default for HeaderMutations {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Immediate response — short-circuit the pipeline and send directly.
+///
+/// Uses `http::` vocabulary types for zero-copy integration with adapters.
+#[derive(Debug)]
+pub struct ImmediateResponse {
+    /// HTTP status code.
+    pub status: http::StatusCode,
+    /// Response headers.
+    pub headers: http::HeaderMap,
+    /// Response body.
+    pub body: Bytes,
+}
+
+impl ImmediateResponse {
+    /// Create a response with the given status code.
+    pub fn with_status(status: http::StatusCode) -> Self {
+        Self {
+            status,
+            headers: http::HeaderMap::new(),
+            body: Bytes::new(),
+        }
+    }
+
+    /// Set the response body.
+    pub fn body(mut self, body: impl Into<Bytes>) -> Self {
+        self.body = body.into();
+        self
+    }
+
+    /// Add a response header.
+    pub fn header(mut self, name: http::HeaderName, value: http::HeaderValue) -> Self {
+        self.headers.insert(name, value);
+        self
+    }
+}
+
 /// Declares which phases a processor participates in.
 ///
 /// Request and response headers are always processed — only body phases
-/// are configurable. This is a simplified view of the ext_proc
-/// `ProcessingMode` — we only expose what matters for in-process
-/// pipelines (headers + buffered body). Streaming and trailer modes
-/// are not relevant for the in-process case.
-///
-/// The pipeline computes the aggregate mode as the union (most-permissive)
-/// of all processor modes: if any processor opts into body processing,
-/// the adapter buffers and delivers body phases to all processors.
+/// are configurable. The pipeline computes the aggregate mode as the
+/// union (most-permissive) of all processor modes: if any processor
+/// opts into body processing, the adapter buffers and delivers body
+/// phases to all processors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProcessingMode {
     /// Process request body (buffered). Default: false.
@@ -130,10 +199,38 @@ mod tests {
     fn phase_result_terminal() {
         assert!(!PhaseResult::Continue.is_terminal());
 
-        let mutation = HeaderMutation::default();
+        let mutation = HeaderMutations::new();
         assert!(!PhaseResult::Mutate(mutation).is_terminal());
 
-        let response = ImmediateResponse::default();
+        let response = ImmediateResponse::with_status(http::StatusCode::OK);
         assert!(PhaseResult::Respond(response).is_terminal());
+    }
+
+    #[test]
+    fn immediate_response_builder() {
+        let resp = ImmediateResponse::with_status(http::StatusCode::FORBIDDEN)
+            .body("denied")
+            .header(
+                http::header::CONTENT_TYPE,
+                http::HeaderValue::from_static("application/json"),
+            );
+        assert_eq!(resp.status, http::StatusCode::FORBIDDEN);
+        assert_eq!(resp.body, "denied");
+        assert_eq!(
+            resp.headers.get(http::header::CONTENT_TYPE).unwrap(),
+            "application/json"
+        );
+    }
+
+    #[test]
+    fn header_mutations_builder() {
+        let mutations = HeaderMutations::new()
+            .set_header(
+                http::header::HeaderName::from_static("x-custom"),
+                http::HeaderValue::from_static("value"),
+            )
+            .remove_header(http::header::HeaderName::from_static("x-remove"));
+        assert_eq!(mutations.set.len(), 1);
+        assert_eq!(mutations.remove.len(), 1);
     }
 }

@@ -6,10 +6,9 @@
 
 use std::sync::Arc;
 
-use envoy_grpc_ext_proc::envoy::service::ext_proc::v3::{HeaderMutation, ImmediateResponse};
-use rumi_http::HttpMessage;
+use tracing::Instrument;
 
-use crate::phase::{PhaseResult, ProcessingMode};
+use crate::phase::{HeaderMutations, ImmediateResponse, PhaseResult, ProcessingMode};
 use crate::processor::{Processor, ProcessorError};
 
 /// How the pipeline handles processor errors.
@@ -31,7 +30,7 @@ impl Default for FailureMode {
 #[derive(Debug)]
 pub enum SequenceOutcome {
     /// All processors returned Continue (possibly with accumulated mutations).
-    Continue(Vec<HeaderMutation>),
+    Continue(Vec<HeaderMutations>),
     /// A processor returned ImmediateResponse — pipeline terminated.
     Respond(ImmediateResponse),
     /// A processor failed and failure_mode is FailClosed.
@@ -54,12 +53,6 @@ impl SequenceOutcome {
 /// 4. On `Mutate` — accumulate mutation, move to next processor
 /// 5. On `Respond` — short-circuit, skip remaining processors AND phases
 /// 6. On `Err` — handle per `failure_mode`
-///
-/// # Cross-Phase Termination (Dijkstra I2)
-///
-/// If any phase returns `Respond` or `Error` (in FailClosed mode),
-/// ALL subsequent phases are skipped. The adapter constructs the response
-/// directly from the `ImmediateResponse` or generates a 500.
 pub struct Sequence {
     processors: Vec<Arc<dyn Processor>>,
     aggregate_mode: ProcessingMode,
@@ -90,11 +83,15 @@ impl Sequence {
     /// Run the request headers phase.
     ///
     /// All processors participate in header phases — there is no opt-out.
-    pub async fn process_request_headers(&self, msg: &HttpMessage) -> SequenceOutcome {
+    pub async fn process_request_headers(
+        &self,
+        parts: &http::request::Parts,
+    ) -> SequenceOutcome {
         let mut mutations = Vec::new();
 
         for proc in &self.processors {
-            match proc.process_request_headers(msg).await {
+            let span = tracing::info_span!("processor", name = proc.name(), phase = "request_headers");
+            match proc.process_request_headers(parts).instrument(span).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
@@ -131,7 +128,8 @@ impl Sequence {
                 continue;
             }
 
-            match proc.process_request_body(body).await {
+            let span = tracing::info_span!("processor", name = proc.name(), phase = "request_body");
+            match proc.process_request_body(body).instrument(span).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
@@ -158,11 +156,15 @@ impl Sequence {
     /// Run the response headers phase.
     ///
     /// All processors participate in header phases — there is no opt-out.
-    pub async fn process_response_headers(&self, msg: &HttpMessage) -> SequenceOutcome {
+    pub async fn process_response_headers(
+        &self,
+        parts: &http::response::Parts,
+    ) -> SequenceOutcome {
         let mut mutations = Vec::new();
 
         for proc in &self.processors {
-            match proc.process_response_headers(msg).await {
+            let span = tracing::info_span!("processor", name = proc.name(), phase = "response_headers");
+            match proc.process_response_headers(parts).instrument(span).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
@@ -199,7 +201,8 @@ impl Sequence {
                 continue;
             }
 
-            match proc.process_response_body(body).await {
+            let span = tracing::info_span!("processor", name = proc.name(), phase = "response_body");
+            match proc.process_response_body(body).instrument(span).await {
                 Ok(PhaseResult::Continue) => {}
                 Ok(PhaseResult::Mutate(mutation)) => {
                     mutations.push(mutation);
@@ -281,12 +284,18 @@ impl Default for SequenceBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::phase::HeaderMutations;
     use crate::processor::BoxFuture;
-    use envoy_grpc_ext_proc::envoy::{
-        config::core::v3::HeaderValueOption,
-        r#type::v3::HttpStatus,
-        service::ext_proc::v3::HeaderMutation,
-    };
+
+    // -- Test helpers --
+
+    fn empty_request_parts() -> http::request::Parts {
+        http::Request::builder().body(()).unwrap().into_parts().0
+    }
+
+    fn empty_response_parts() -> http::response::Parts {
+        http::Response::builder().body(()).unwrap().into_parts().0
+    }
 
     // -- Test processors --
 
@@ -306,22 +315,21 @@ mod tests {
         }
         fn process_request_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::request::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
             Box::pin(async {
-                Ok(PhaseResult::Respond(ImmediateResponse {
-                    status: Some(HttpStatus { code: 403 }),
-                    body: b"denied".to_vec(),
-                    ..Default::default()
-                }))
+                Ok(PhaseResult::Respond(
+                    ImmediateResponse::with_status(http::StatusCode::FORBIDDEN)
+                        .body("denied"),
+                ))
             })
         }
     }
 
     /// Adds a header mutation.
     struct MutatingProcessor {
-        header_name: String,
-        header_value: String,
+        header_name: &'static str,
+        header_value: &'static str,
     }
     impl Processor for MutatingProcessor {
         fn name(&self) -> &str {
@@ -329,24 +337,14 @@ mod tests {
         }
         fn process_request_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::request::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
-            let name = self.header_name.clone();
-            let value = self.header_value.clone();
+            let name = http::HeaderName::from_static(self.header_name);
+            let value = http::HeaderValue::from_static(self.header_value);
             Box::pin(async move {
-                Ok(PhaseResult::Mutate(HeaderMutation {
-                    set_headers: vec![HeaderValueOption {
-                        header: Some(
-                            envoy_grpc_ext_proc::envoy::config::core::v3::HeaderValue {
-                                key: name,
-                                value,
-                                raw_value: vec![],
-                            },
-                        ),
-                        ..Default::default()
-                    }],
-                    remove_headers: vec![],
-                }))
+                Ok(PhaseResult::Mutate(
+                    HeaderMutations::new().set_header(name, value),
+                ))
             })
         }
     }
@@ -359,7 +357,7 @@ mod tests {
         }
         fn process_request_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::request::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
             Box::pin(async { Err(ProcessorError::new("failing", "intentional failure")) })
         }
@@ -395,7 +393,7 @@ mod tests {
         }
         fn process_request_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::request::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
             self.request_headers_called
                 .store(true, std::sync::atomic::Ordering::SeqCst);
@@ -403,7 +401,7 @@ mod tests {
         }
         fn process_response_headers(
             &self,
-            _msg: &HttpMessage,
+            _parts: &http::response::Parts,
         ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
             self.response_headers_called
                 .store(true, std::sync::atomic::Ordering::SeqCst);
@@ -411,24 +409,13 @@ mod tests {
         }
     }
 
-    fn empty_message() -> HttpMessage {
-        use envoy_grpc_ext_proc::envoy::service::ext_proc::v3::{
-            processing_request::Request, HttpHeaders, ProcessingRequest,
-        };
-        let req = ProcessingRequest {
-            request: Some(Request::RequestHeaders(HttpHeaders::default())),
-            ..Default::default()
-        };
-        HttpMessage::from(&req)
-    }
-
     // -- Tests --
 
     #[tokio::test]
     async fn empty_pipeline_continues() {
         let seq = Sequence::builder().build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 
@@ -437,8 +424,8 @@ mod tests {
         let seq = Sequence::builder()
             .processor(Arc::new(PassthroughProcessor))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 
@@ -448,8 +435,8 @@ mod tests {
             .processor(Arc::new(DenyProcessor))
             .processor(Arc::new(PassthroughProcessor))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Respond(_)));
     }
 
@@ -457,16 +444,16 @@ mod tests {
     async fn mutations_accumulate() {
         let seq = Sequence::builder()
             .processor(Arc::new(MutatingProcessor {
-                header_name: "x-first".into(),
-                header_value: "1".into(),
+                header_name: "x-first",
+                header_value: "1",
             }))
             .processor(Arc::new(MutatingProcessor {
-                header_name: "x-second".into(),
-                header_value: "2".into(),
+                header_name: "x-second",
+                header_value: "2",
             }))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         match outcome {
             SequenceOutcome::Continue(mutations) => {
                 assert_eq!(mutations.len(), 2);
@@ -480,12 +467,12 @@ mod tests {
         let seq = Sequence::builder()
             .processor(Arc::new(DenyProcessor))
             .processor(Arc::new(MutatingProcessor {
-                header_name: "x-should-not-appear".into(),
-                header_value: "nope".into(),
+                header_name: "x-should-not-appear",
+                header_value: "nope",
             }))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Respond(_)));
     }
 
@@ -496,8 +483,8 @@ mod tests {
             .processor(Arc::new(FailingProcessor))
             .processor(Arc::new(PassthroughProcessor))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Error(_)));
     }
 
@@ -508,8 +495,8 @@ mod tests {
             .processor(Arc::new(FailingProcessor))
             .processor(Arc::new(PassthroughProcessor))
             .build();
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
         assert!(matches!(outcome, SequenceOutcome::Continue(_)));
     }
 
@@ -519,7 +506,6 @@ mod tests {
             .processor(Arc::new(PassthroughProcessor))
             .processor(Arc::new(BodyProcessor))
             .build();
-        // BodyProcessor declares FULL mode, so aggregate should include body
         assert!(seq.mode().request_body);
         assert!(seq.mode().response_body);
     }
@@ -536,24 +522,29 @@ mod tests {
 
     #[tokio::test]
     async fn cross_phase_termination_on_immediate_response() {
-        // Deny on request headers → response headers should NOT be called
         let recorder = Arc::new(RecordingProcessor::new());
         let seq = Sequence::builder()
             .processor(Arc::new(DenyProcessor))
             .processor(recorder.clone())
             .build();
 
-        let msg = empty_message();
-        let outcome = seq.process_request_headers(&msg).await;
+        let parts = empty_request_parts();
+        let outcome = seq.process_request_headers(&parts).await;
 
-        // DenyProcessor fires first, recorder never gets request headers
         assert!(matches!(outcome, SequenceOutcome::Respond(_)));
         assert!(!recorder
             .request_headers_called
             .load(std::sync::atomic::Ordering::SeqCst));
-
-        // The adapter is responsible for NOT calling response phases after
-        // ImmediateResponse. Verify the Sequence correctly reports terminal.
         assert!(outcome.is_terminal());
+    }
+
+    #[tokio::test]
+    async fn response_headers_phase() {
+        let seq = Sequence::builder()
+            .processor(Arc::new(PassthroughProcessor))
+            .build();
+        let parts = empty_response_parts();
+        let outcome = seq.process_response_headers(&parts).await;
+        assert!(matches!(outcome, SequenceOutcome::Continue(m) if m.is_empty()));
     }
 }

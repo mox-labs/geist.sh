@@ -12,8 +12,15 @@ name = "geist-sh"
 path = "src/main.rs"
 
 [dependencies]
-geist-edge = { workspace = true }
+geist-edge = { workspace = true, features = ["adapter-axum"] }
+axum = "0.8"
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 serde_json.workspace = true
+
+# OTel
+opentelemetry.workspace = true
+opentelemetry_sdk.workspace = true
+opentelemetry-otlp.workspace = true
+tracing-opentelemetry.workspace = true
