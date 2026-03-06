@@ -36,8 +36,8 @@ pub mod prelude {
     pub use crate::phase::{PhaseResult, ProcessingMode};
     pub use crate::processor::{BoxFuture, Processor, ProcessorError};
     pub use crate::registry::{
-        IntoProcessor, ProcessorRegistration, ProcessorRegistry, ProcessorRegistryBuilder,
-        TypedConfig,
+        collect_processor_extensions, IntoProcessor, ProcessorRegistration, ProcessorRegistry,
+        TypedConfig, TypedRegistry, TypedRegistryBuilder,
     };
     pub use rumi_http::HttpMessage;
 

@@ -60,11 +60,12 @@ See `scratch/capability-led-connectivity.md` for the full processing model.
 |-------|------|------|
 | `geist-edge` | `geist/edge` | Composable data plane runtime — Processor trait, typed extension registry, compositors, built-in processors (incl. access control) |
 | `geist-sh` | `geist/bin` | Binary — composition root, links extensions, starts adapter + agent runtime |
-| `slickit` | `slickit/` | Generic typed extension registry — `TypedConfig`, `TypedRegistry<T, E>` |
+
+**External dependency**: [`slickit`](https://github.com/mox-labs/slick) (Apache-2.0) — generic typed extension registry (`TypedConfig`, `TypedRegistry<T, E>`). geist-edge uses it via type alias `ProcessorRegistry = TypedRegistry<Arc<dyn Processor>, ProcessorError>`.
 
 ## Key Documents
 
-1. `scratch/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, ProcessorRegistryBuilder, type URL factories. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
+1. `scratch/typed-extension-registry.md` — **Typed extension registry pattern.** IntoProcessor trait, type URL factories, `collect_processor_extensions()`. Reference patterns from Envoy FactoryRegistry and rumi RegistryBuilder.
 2. `scratch/deployment-models.md` — **Deployment models & enforcement architecture.** Five enforcement layers (axum, hook, tauri, sandbox-runtime, eBPF), deployment models, Agent SDK tool execution research.
 3. `scratch/capability-led-connectivity.md` — **Capability-led connectivity model.** Processing pipeline, protocol mechanics, CapabilityServer/Client, boundary/encapsulation, Envoy mapping, decision framework.
 

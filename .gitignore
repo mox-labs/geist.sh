@@ -10,6 +10,9 @@ rnd/
 *.pdf
 *.png
 
+# mdbook build output
+docs/dev/book/
+
 # Rust
 target/
 
