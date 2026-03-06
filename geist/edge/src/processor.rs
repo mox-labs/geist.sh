@@ -17,8 +17,6 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use rumi_http::HttpMessage;
-
 use crate::phase::{PhaseResult, ProcessingMode};
 
 /// Boxed future for dyn-compatible async trait methods.
@@ -88,12 +86,9 @@ impl std::error::Error for ProcessorError {
 ///
 /// All methods return `Result<PhaseResult, ProcessorError>`:
 /// - `PhaseResult::Continue` — no mutation, pass to next processor
-/// - `PhaseResult::Mutate(HeaderMutation)` — apply header mutations, continue
+/// - `PhaseResult::Mutate(HeaderMutations)` — apply header mutations, continue
 /// - `PhaseResult::Respond(ImmediateResponse)` — short-circuit, send response to client
 /// - `Err(ProcessorError)` — processor failure, compositor handles (fail-open/closed)
-///
-/// The compositor translates `PhaseResult` into the correct phase-specific
-/// `ProcessingResponse` variant (Dijkstra I1: response oneof must match request phase).
 ///
 /// # Send + Sync
 ///
@@ -106,22 +101,17 @@ pub trait Processor: Send + Sync {
     ///
     /// Default: headers-only (no body processing).
     /// Override if you implement body methods.
-    ///
-    /// Header phases are always processed — all processors participate.
-    /// The pipeline computes the aggregate mode as the union (most-permissive)
-    /// of all processor modes. If any processor opts into body processing,
-    /// the adapter will buffer and deliver body phases to all processors.
     fn mode(&self) -> ProcessingMode {
         ProcessingMode::HEADERS_ONLY
     }
 
     /// Process request headers phase.
     ///
-    /// Called with an [`HttpMessage`] — an indexed O(1) view over the
-    /// `ProcessingRequest(request_headers)` envelope.
+    /// Called with request [`Parts`](http::request::Parts) — zero-copy
+    /// from the adapter (axum: `req.into_parts().0`).
     fn process_request_headers(
         &self,
-        _msg: &HttpMessage,
+        _parts: &http::request::Parts,
     ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
         Box::pin(async { Ok(PhaseResult::Continue) })
     }
@@ -129,7 +119,7 @@ pub trait Processor: Send + Sync {
     /// Process request body phase.
     ///
     /// Only called if `mode()` opts into request body processing
-    /// AND the request has a body (`end_of_stream` was false on headers).
+    /// AND the request has a body.
     fn process_request_body(
         &self,
         _body: &[u8],
@@ -139,11 +129,10 @@ pub trait Processor: Send + Sync {
 
     /// Process response headers phase.
     ///
-    /// Called with an [`HttpMessage`] — indexed view over the
-    /// `ProcessingRequest(response_headers)` envelope from upstream.
+    /// Called with response [`Parts`](http::response::Parts) from upstream.
     fn process_response_headers(
         &self,
-        _msg: &HttpMessage,
+        _parts: &http::response::Parts,
     ) -> BoxFuture<'_, Result<PhaseResult, ProcessorError>> {
         Box::pin(async { Ok(PhaseResult::Continue) })
     }
