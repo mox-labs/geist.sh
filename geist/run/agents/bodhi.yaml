@@ -1,0 +1,8 @@
+name: bodhi
+description: "Project vision interviewer. Conducts structured dialogue to extract and harden the creator's intent into a DNA document."
+model: claude-sonnet-4-20250514
+color: green
+tools:
+  - read_file
+  - write_file
+  - list_files
