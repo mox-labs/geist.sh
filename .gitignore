@@ -16,6 +16,13 @@ docs/dev/book/
 # Rust
 target/
 
+# Python
+__pycache__/
+*.py[oc]
+*.egg-info
+.venv/
+uv.lock
+
 # Dependencies
 node_modules/
 
