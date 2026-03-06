@@ -8,7 +8,8 @@ Governed runtime for AI agents. Composable processor pipeline that intercepts, e
 |-------|------|---------|
 | **geist-edge** | `geist/edge` | Core runtime — Processor trait, compositor, registry, built-in processors |
 | **geist-sh** | `geist/bin` | Binary — composition root, collects extensions, starts runtime |
-| **slickit** | `slickit/` | Generic typed extension registry. `TypedConfig` → `TypedRegistry<T, E>` |
+
+Depends on [**slickit**](https://github.com/mox-labs/slick) (Apache-2.0) for the typed extension registry.
 
 ## Status
 

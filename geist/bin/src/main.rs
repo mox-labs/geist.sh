@@ -13,10 +13,8 @@ fn main() {
         )
         .init();
 
-    // Build registry — collect_extensions() picks up everything linked.
-    let registry = ProcessorRegistryBuilder::new()
-        .collect_extensions()
-        .build();
+    // Build registry — collects all inventory::submit! registrations.
+    let registry = collect_processor_extensions().build();
 
     tracing::info!(
         extensions = registry.type_urls().len(),

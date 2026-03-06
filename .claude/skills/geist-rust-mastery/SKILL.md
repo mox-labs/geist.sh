@@ -13,6 +13,7 @@ not syntax.
 - [Security: Freeze vs Configure](#security-freeze-vs-configure)
 - [Schools of Rust](#schools-of-rust)
 - [Reverse Proxy Patterns](#reverse-proxy-patterns-geist-edge)
+- [ACES Adapter Abstraction](#aces-adapter-abstraction)
 - [Gateway Design Tensions](#gateway-design-tensions-xuma)
 - [Tauri Embedding](#tauri-embedding-geist-shell)
 - [FFI Boundary](#ffi-boundary-geist--shell)
@@ -157,6 +158,30 @@ concurrent requests.
 
 See [proxy-patterns.md](references/proxy-patterns.md) for M1 implementation patterns with code.
 See [production-proxy-patterns.md](references/production-proxy-patterns.md) for production proxy engineering (pingora, retry, H1/H2, DoS protection).
+
+---
+
+## ACES Adapter Abstraction
+
+**Principle: Processors take `http::` types. Adapters provide them. Serialization at wire boundaries only.**
+
+All three target runtimes converge on `http::request::Parts` / `http::response::Parts`:
+- **axum**: `Request::into_parts()` — native, zero copy
+- **pingora**: `Session::req_header()` wraps `http::request::Parts` — zero copy
+- **ext_proc**: Deserialize at boundary — only place protobuf types live
+
+Adapters are **modules, not a trait**. The runtimes are too different (handler fn vs lifecycle
+callbacks vs gRPC stream) for a useful common interface. The pipeline (`Sequence::process_*`)
+IS the abstraction.
+
+| Model | Adapter | When |
+|-------|---------|------|
+| Library | axum | Embedded in Tauri, Claude Code hook, single-agent |
+| Standalone proxy | pingora | Multi-agent gateway, hot restart, production |
+| Remote processor | ext_proc | geist-run, Envoy sidecar, distributed |
+
+See [adapter-abstraction.md](references/adapter-abstraction.md) for full design with code patterns
+and source traceability.
 
 ---
 
