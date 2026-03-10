@@ -1,0 +1,15 @@
+[package]
+name = "geist-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "geist-cli"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
