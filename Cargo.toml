@@ -18,7 +18,7 @@ authors = ["Yashodeep Vyas"]
 [workspace.dependencies]
 # Internal
 geist-edge = { path = "geist/edge" }
-slickit = { path = "../slick" }
+slickit = "0.1.0"
 
 # Core (path deps on x.uma — package key needed: lib=rumi, package=rumi-core)
 rumi = { path = "../x.uma/rumi/core", package = "rumi-core", features = ["serde"] }
